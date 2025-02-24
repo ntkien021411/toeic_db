@@ -1,9 +1,7 @@
 <?php
 use Illuminate\Http\Request;
-use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Models\User;
 
 use Illuminate\Support\Facades\DB;
 
@@ -41,17 +39,22 @@ Route::get('/check-db', function () {
 });
 Route::get('/status', function () {
     return response()->json([
-        'message' => 'Ứng dụng đã chạy thành công!',
+        'message' => 'Ứng dụng đã chạy thành công!12321',
         'status' => true
     ]);
-});
-Route::get('/users', function () {
-    return response()->json(User::all());
 });
 
 Route::prefix('api')->group(function () {
     Route::prefix('auth')->group(function () {
-        Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
+
+    // ✅ Bảo vệ API bằng middleware require.token
+    Route::middleware(['require.token'])->group(function () {
+        Route::get('/protected', function () {
+            return response()->json(['message' => 'Bạn đã truy cập API thành công!']);
+        });
     });
 });

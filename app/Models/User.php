@@ -9,9 +9,10 @@ class User extends Model
 {
     use HasFactory;
 
-    protected $table = 'users'; 
+    protected $table = 'user'; // Chỉ định bảng tương ứng trong database
 
-    protected $fillable = ['name', 'email', 'password'];
-    
-    protected $hidden = ['password']; // Ẩn password khi trả về JSON
+    protected $fillable = [
+        'account_id', 'role', 'first_name', 'last_name',
+        'birth_of_date', 'phone', 'facebook_link', 'created_at', 'deleted_at'
+    ];
 }
