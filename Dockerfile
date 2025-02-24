@@ -20,6 +20,8 @@ WORKDIR /var/www
 
 COPY . /var/www
 
+COPY .env.example .env
+
 RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
