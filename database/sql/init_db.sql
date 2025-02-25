@@ -5,7 +5,7 @@ USE toeic_db;
 CREATE TABLE Account (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(100)  NULL,
     password VARCHAR(255) NOT NULL,
     active_status BOOLEAN NOT NULL DEFAULT FALSE,
     is_active_date TIMESTAMP NULL,

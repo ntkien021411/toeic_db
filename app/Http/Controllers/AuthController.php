@@ -18,7 +18,6 @@ class AuthController extends Controller
          // 1. Kiểm tra đầu vào (email/username & password không được rỗng)
          $validator = Validator::make($request->all(), [
             'username' => 'required',
-            'email' => 'required',
             'password' => 'required',
          ]);
  
@@ -27,8 +26,7 @@ class AuthController extends Controller
          }
  
          // 2. Tìm tài khoản theo email hoặc username
-         $account = Account::where('email', $request->email)
-             ->orWhere('username', $request->username)
+         $account = Account::where('username', $request->username)
              ->first();
         
          // 3. Kiểm tra tài khoản có tồn tại và mật khẩu có đúng không
@@ -55,6 +53,7 @@ class AuthController extends Controller
          // 6. Trả về response chứa token
          return response()->json([
              'message' => 'Đăng nhập thành công',
+             'account' => $account,
              'token' => $accessToken,
              'refresh_token' => $refreshToken,
              'expires_in' => $expiredAt,
