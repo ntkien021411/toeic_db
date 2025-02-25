@@ -37,7 +37,7 @@ class AuthController extends Controller
          // 4. Tạo Access Token & Refresh Token
          $accessToken = Str::random(60); // Token ngẫu nhiên
          $refreshToken = Str::random(60); // Token làm mới
-         $expiredAt = Carbon::now()->addMinutes(1); // Token hết hạn sau 1 phút
+         $expiredAt = Carbon::now()->addMinutes(2); // Token hết hạn sau 2 phút
          $refreshExpiredAt = Carbon::now()->addDays(3); // Refresh token hết hạn sau 3 ngày
  
          // 5. Lưu token vào database

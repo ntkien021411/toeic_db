@@ -17,7 +17,6 @@ class Account extends Authenticatable
         'email',
         'password',
         'active_status',
-        'is_active_date',
         'active_date',
         'is_first',
         'created_at',
@@ -34,4 +33,5 @@ class Account extends Authenticatable
     {
         return $this->hasMany(Token::class, 'account_id');
     }
+    
 }

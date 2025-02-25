@@ -8,6 +8,6 @@ class VerifyCsrfToken extends Middleware
 {
     
     protected $except = [
-        '/api/auth/*', // Thêm route cần bỏ qua CSRF
+        'api/*', // Bỏ qua CSRF(lỗi 419) cho tất cả API
     ];
 }

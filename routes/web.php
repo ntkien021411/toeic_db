@@ -1,7 +1,6 @@
 <?php
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
 
 use Illuminate\Support\Facades\DB;
 
@@ -44,6 +43,8 @@ Route::get('/status', function () {
     ]);
 });
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminController;
 Route::prefix('api')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
@@ -53,8 +54,11 @@ Route::prefix('api')->group(function () {
 
     // ✅ Bảo vệ API bằng middleware require.token
     Route::middleware(['require.token'])->group(function () {
-        Route::get('/protected', function () {
-            return response()->json(['message' => 'Bạn đã truy cập API thành công!']);
-        });
+       
+        //Admin Feature CRUD , Searching , Paging
+        Route::get('/accounts', [AdminController::class, 'index']); // Xem danh sách hoặc tìm kiếm tài khoản
+        Route::post('/accounts', [AdminController::class, 'store']); // Tạo tài khoản
+        Route::put('/accounts/{id}', [AdminController::class, 'update']); // Cập nhật hoặc xóa mềm tài khoản
+
     });
 });

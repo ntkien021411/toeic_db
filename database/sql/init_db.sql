@@ -5,37 +5,36 @@ USE toeic_db;
 CREATE TABLE Account (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100)  NULL,
+    email VARCHAR(100) NULL,
     password VARCHAR(255) NOT NULL,
     active_status BOOLEAN NOT NULL DEFAULT FALSE,
-    is_active_date TIMESTAMP NULL,
     active_date TIMESTAMP NULL,
     is_first BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    deleted_at TIMESTAMP NULL
 );
 
--- 2. Bảng User (Tham chiếu đến Account)
+-- 3. Bảng User (Tham chiếu đến Account và Role)
 CREATE TABLE User (
     id INT AUTO_INCREMENT PRIMARY KEY,
     account_id INT UNIQUE NOT NULL,
-    role ENUM('TEACHER', 'STUDENT', 'ADMIN') NOT NULL,
+	role ENUM('TEACHER', 'STUDENT', 'ADMIN') NOT NULL,
     first_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NULL,
-    birth_of_date DATE NULL,
+    birth_date DATE NULL,
     phone VARCHAR(15) UNIQUE NULL,
+    image_link VARCHAR(255) NULL,
     facebook_link VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    INDEX idx_account_id (account_id),
     CONSTRAINT fk_user_account FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE
 );
 
--- 3. Bảng Class (Lớp học)
+
+
+-- 4. Bảng Class (Lớp học)
 CREATE TABLE Class (
     id INT AUTO_INCREMENT PRIMARY KEY,
     class_code VARCHAR(50) UNIQUE NOT NULL,
@@ -43,23 +42,25 @@ CREATE TABLE Class (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     student_count INT DEFAULT 0,
-    teacher_name VARCHAR(255) NOT NULL,
+    is_full BOOLEAN NOT NULL DEFAULT FALSE,
+    teacher_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    CONSTRAINT fk_class_teacher FOREIGN KEY (teacher_id) REFERENCES User(id) ON DELETE RESTRICT
 );
 
--- 4. Bảng Class_User (Mối quan hệ giữa Class và User)
+-- 5. Bảng Class_User (Mối quan hệ giữa Class và User, thay thế ENUM role)
 CREATE TABLE Class_User (
     id INT AUTO_INCREMENT PRIMARY KEY,
     class_id INT NOT NULL,
     user_id INT NOT NULL,
-    role ENUM('TEACHER', 'STUDENT') NOT NULL,
+    e ENUM('TEACHER', 'STUDENT') NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    left_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_class FOREIGN KEY (class_id) REFERENCES Class(id) ON DELETE CASCADE,
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
     UNIQUE (class_id, user_id)
@@ -68,13 +69,14 @@ CREATE TABLE Class_User (
 -- 5. Bảng Exam_Section (Các phần thi TOEIC)
 CREATE TABLE Exam_Section (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    exam_code VARCHAR(50) UNIQUE NOT NULL,
-    exam_name VARCHAR(255) NOT NULL,
-    section_name ENUM('Listening', 'Reading') NOT NULL,
-    part_number TINYINT NOT NULL CHECK (part_number BETWEEN 1 AND 7), 
-    question_count INT NOT NULL CHECK (question_count > 0),
-    duration INT NOT NULL CHECK (duration > 0),
-    max_score INT NOT NULL CHECK (max_score > 0),
+    exam_code VARCHAR(50)  NOT NULL,
+    exam_name VARCHAR(255)  NULL,
+    section_name ENUM('Listening', 'Reading', 'Full') NOT NULL, 
+    part_number ENUM('1', '2', '3', '4', '5', '6', '7', 'Full') NOT NULL, -- Chuyển từ TINYINT sang ENUM
+    question_count INT  NULL CHECK (question_count > 0),
+    year INT  NULL CHECK (year > 0),
+    duration INT  NULL CHECK (duration > 0),
+    max_score INT  NULL CHECK (max_score > 0),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
@@ -85,11 +87,14 @@ CREATE TABLE Exam_Section (
 CREATE TABLE Question (
     id INT AUTO_INCREMENT PRIMARY KEY,
     exam_section_id INT NOT NULL,
-    question_text TEXT NOT NULL,
-    option_a TEXT NOT NULL,
-    option_b TEXT NOT NULL,
-    option_c TEXT NOT NULL,
-    option_d TEXT NOT NULL,
+    image_url TEXT  NULL,
+    audio_url TEXT  NULL,
+    part_number ENUM('1', '2', '3', '4', '5', '6', '7') NOT NULL, 
+    question_text TEXT  NULL,
+    option_a TEXT  NULL,
+    option_b TEXT  NULL,
+    option_c TEXT  NULL,
+    option_d TEXT  NULL,
     correct_answer CHAR(1) CHECK (correct_answer IN ('A', 'B', 'C', 'D')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -104,6 +109,8 @@ CREATE TABLE Exam_Result (
     user_id INT NOT NULL,
     exam_section_id INT NOT NULL,
     score INT CHECK (score >= 0),
+    correct_answers INT CHECK (correct_answers >= 0),
+    wrong_answers INT CHECK (wrong_answers >= 0),
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
@@ -112,23 +119,24 @@ CREATE TABLE Exam_Result (
     CONSTRAINT fk_exam_result_exam FOREIGN KEY (exam_section_id) REFERENCES Exam_Section(id) ON DELETE CASCADE
 );
 
+
 -- 8. Bảng Diploma (Chứng chỉ)
 CREATE TABLE Diploma (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     certificate_name VARCHAR(255) NOT NULL,
     score DECIMAL(5,2) NOT NULL,
-    level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'TOEIC', 'IELTS', 'TOEFL') NOT NULL,
+    level VARCHAR(500) NOT NULL,  -- Không dùng ENUM nữa
     issued_by VARCHAR(255) NOT NULL,
     issue_date DATE NOT NULL,
     expiry_date DATE NULL,
+    certificate_image TEXT NULL,  -- Cột mới để lưu URL ảnh chứng chỉ
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_diploma_user FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE
 );
-
 -- 9. Bảng Token (Không cần xóa mềm, nhưng có cập nhật thời gian)
 CREATE TABLE Token (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -141,85 +149,112 @@ CREATE TABLE Token (
     CONSTRAINT fk_token_account FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE
 );
 
--- MẬT KHẨU ADMIN : ADMIN , MẬT KHẨU USER : 123456
--- Thêm tài khoản Admin vào bảng Account
-INSERT INTO Account (username, email, password, active_status, is_active_date, active_date) VALUES
-('admin', 'admin@example.com', '$2y$10$3bpAkU1C09o..qM1DBnnQeY8ZU5TdVl2o5q.KMLfegnQ4eAfU2xSq', true, NOW(), NOW());
 
--- Thêm tài khoản giáo viên vào bảng Account
-INSERT INTO Account (username, email, password, active_status, is_active_date, active_date) VALUES
-('teacher1', 'teacher1@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('teacher2', 'teacher2@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('teacher3', 'teacher3@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL);
+-- Thêm 1 tài khoản Admin
+INSERT INTO Account (username, email, password, active_status) VALUES
+('admin', 'admin@example.com', '$2y$10$3bpAkU1C09o..qM1DBnnQeY8ZU5TdVl2o5q.KMLfegnQ4eAfU2xSq', TRUE);
 
--- Thêm Admin vào bảng User
-INSERT INTO User (account_id, role, first_name, last_name, birth_of_date, phone, facebook_link) VALUES
-((SELECT id FROM Account WHERE username = 'admin'), 'ADMIN', 'System', 'Admin', '1980-01-01', '0909123456', 'https://facebook.com/admin');
+INSERT INTO User (account_id, role, first_name, last_name) VALUES
+((SELECT id FROM Account WHERE username = 'admin'), 'ADMIN', 'Admin', 'User');
 
--- Thêm giáo viên vào bảng User
-INSERT INTO User (account_id, role, first_name, last_name, birth_of_date, phone, facebook_link) VALUES
-((SELECT id FROM Account WHERE username = 'teacher1'), 'TEACHER', 'John', 'Doe', '1980-01-15', '0987654321', 'https://facebook.com/john.doe'),
-((SELECT id FROM Account WHERE username = 'teacher2'), 'TEACHER', 'Jane', 'Smith', '1985-06-20', '0977123456', 'https://facebook.com/jane.smith'),
-((SELECT id FROM Account WHERE username = 'teacher3'), 'TEACHER', 'Alice', 'Brown', '1990-09-10', '0966987456', 'https://facebook.com/alice.brown');
+-- Thêm 3 tài khoản Giáo viên
+INSERT INTO Account (username, email, password, active_status) VALUES
+('teacher1', 'teacher1@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+('teacher2', 'teacher2@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+('teacher3', 'teacher3@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE);
 
--- Thêm tài khoản học viên
-INSERT INTO Account (username, email, password, active_status, is_active_date, active_date) VALUES
-('student1', 'student1@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student2', 'student2@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student3', 'student3@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student4', 'student4@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student5', 'student5@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student6', 'student6@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student7', 'student7@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student8', 'student8@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student9', 'student9@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student10', 'student10@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student11', 'student11@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student12', 'student12@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student13', 'student13@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student14', 'student14@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL),
-('student15', 'student15@example.com','$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', false, NULL, NULL);
--- Thêm học viên vào bảng User
-INSERT INTO User (account_id, role, first_name, last_name, birth_of_date, phone, facebook_link) VALUES
+INSERT INTO User (account_id, role, first_name, last_name) VALUES
+((SELECT id FROM Account WHERE username = 'teacher1'), 'TEACHER', 'John', 'Doe'),
+((SELECT id FROM Account WHERE username = 'teacher2'), 'TEACHER', 'Alice', 'Smith'),
+((SELECT id FROM Account WHERE username = 'teacher3'), 'TEACHER', 'Bob', 'Brown');
 
-(5, 'STUDENT', 'Sara', 'White', '2006-07-22', '0934567892', 'https://facebook.com/sara.white'),
-(6, 'STUDENT', 'Chris', 'Green', '2007-02-14', '0934567893', 'https://facebook.com/chris.green'),
-(7, 'STUDENT', 'David', 'Blue', '2005-12-01', '0934567894', 'https://facebook.com/david.blue'),
-(8, 'STUDENT', 'Emily', 'Black', '2006-03-18', '0934567895', 'https://facebook.com/emily.black'),
-(9, 'STUDENT', 'Daniel', 'Brown', '2005-09-25', '0934567896', 'https://facebook.com/daniel.brown'),
-(10, 'STUDENT', 'Sophia', 'Wilson', '2007-04-30', '0934567897', 'https://facebook.com/sophia.wilson'),
-(11, 'STUDENT', 'Olivia', 'Taylor', '2006-10-05', '0934567898', 'https://facebook.com/olivia.taylor'),
-(12, 'STUDENT', 'James', 'Anderson', '2007-06-20', '0934567899', 'https://facebook.com/james.anderson'),
-(13, 'STUDENT', 'Mia', 'Thomas', '2006-11-11', '0934567800', 'https://facebook.com/mia.thomas'),
-(14, 'STUDENT', 'William', 'Martinez', '2005-08-29', '0934567801', 'https://facebook.com/william.martinez'),
-(15, 'STUDENT', 'Charlotte', 'Garcia', '2006-01-16', '0934567802', 'https://facebook.com/charlotte.garcia'),
-(16, 'STUDENT', 'Benjamin', 'Rodriguez', '2007-05-07', '0934567803', 'https://facebook.com/benjamin.rodriguez'),
-(17, 'STUDENT', 'Lucas', 'Hernandez', '2005-12-23', '0934567804', 'https://facebook.com/lucas.hernandez'),
-(18, 'STUDENT', 'Isabella', 'Lopez', '2006-09-15', '0934567805', 'https://facebook.com/isabella.lopez'),
-(19, 'STUDENT', 'Mike', 'Johnson', '2005-05-10', '0934567891', 'https://facebook.com/mike.johnson');
+-- Thêm 15 tài khoản Sinh viên
+INSERT INTO Account (username, email, password, active_status) 
+VALUES ('student1', 'student1@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student2', 'student2@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student3', 'student3@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student4', 'student4@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student5', 'student5@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student6', 'student6@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student7', 'student7@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student8', 'student8@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student9', 'student9@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student10', 'student10@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student11', 'student11@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student12', 'student12@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student13', 'student13@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student14', 'student14@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+       ('student15', 'student15@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE);
 
--- Thêm bằng cấp cho giáo viên
-INSERT INTO Diploma (user_id, certificate_name, score, level, issued_by, issue_date, expiry_date) VALUES
-(4, 'TOEIC Certification', 950, 'TOEIC', 'ETS', '2020-05-10', '2022-05-10'),
-(4, 'IELTS Certification', 7.5, 'IELTS', 'British Council', '2019-11-15', '2021-11-15'),
-(2, 'TOEFL Certification', 110, 'TOEFL', 'ETS', '2021-03-20', '2023-03-20'),
-(3, 'TOEIC Certification', 900, 'TOEIC', 'ETS', '2020-07-22', '2022-07-22');
+INSERT INTO User (account_id, role, first_name, last_name)
+SELECT id, 'STUDENT', CONCAT('Student', id), 'User' FROM Account WHERE username LIKE 'student%';
 
--- Thêm lớp học
-INSERT INTO Class (class_code, class_name, start_date, end_date, student_count, teacher_name) VALUES
-('CLASS101', 'English Beginner', '2024-01-15', '2024-06-15', 5, 'John Doe'),
-('CLASS102', 'Intermediate English', '2024-02-10', '2024-07-10', 5, 'Jane Smith'),
-('CLASS103', 'Advanced English', '2024-03-05', '2024-08-05', 5, 'Alice Brown');
+-- Tạo 5 lớp học và gán giáo viên
+INSERT INTO Class (class_code, class_name, start_date, end_date, teacher_id) 
+VALUES ('C101', 'TOEIC Basic', '2024-01-10', '2024-06-10', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1'))),
+       ('C102', 'TOEIC Intermediate', '2024-02-15', '2024-07-15', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1'))),
+       ('C103', 'TOEIC Advanced', '2024-03-01', '2024-08-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2'))),
+       ('C104', 'TOEIC Listening Master', '2024-04-01', '2024-09-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2'))),
+       ('C105', 'TOEIC Reading Master', '2024-05-01', '2024-10-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher3')));
 
--- Gán giáo viên vào lớp học
-INSERT INTO Class_User (class_id, user_id) VALUES
-(1, 4),
-(2, 2),
-(3, 3);
+-- Gán 3 sinh viên vào mỗi lớp
+INSERT INTO Class_User (class_id, user_id, e)
+SELECT (SELECT id FROM Class WHERE class_code = 'C101'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student1', 'student2', 'student3'));
 
--- Gán học sinh vào lớp học
-INSERT INTO Class_User (class_id, user_id, role) VALUES
-(1, 5, 'STUDENT'), (1, 6, 'STUDENT'), (1, 7, 'STUDENT'), (1, 8, 'STUDENT'), (1, 9, 'STUDENT'),
-(2, 10, 'STUDENT'), (2, 19, 'STUDENT'), (2, 11, 'STUDENT'), (2, 12, 'STUDENT'), (2, 13, 'STUDENT'),
-(3, 14, 'STUDENT'), (3, 15, 'STUDENT'), (3, 16, 'STUDENT'), (3, 17, 'STUDENT'), (3, 18, 'STUDENT');
+INSERT INTO Class_User (class_id, user_id, e)
+SELECT (SELECT id FROM Class WHERE class_code = 'C102'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student4', 'student5', 'student6'));
+
+INSERT INTO Class_User (class_id, user_id, e)
+SELECT (SELECT id FROM Class WHERE class_code = 'C103'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student7', 'student8', 'student9'));
+
+INSERT INTO Class_User (class_id, user_id, e)
+SELECT (SELECT id FROM Class WHERE class_code = 'C104'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student10', 'student11', 'student12'));
+
+INSERT INTO Class_User (class_id, user_id, e)
+SELECT (SELECT id FROM Class WHERE class_code = 'C105'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student13', 'student14', 'student15'));
+
+
+-- 1. Thêm bài thi TOEIC (7 bài thi với part 1-7, và 1 bài thi full)
+INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score)
+VALUES 
+-- Bài thi TOEIC 7 Part
+('TOEIC_001', 'TOEIC Exam 1', 'Listening', '1', 10, 2025, 10, 50),
+('TOEIC_001', 'TOEIC Exam 1', 'Listening', '2', 30, 2025, 20, 100),
+('TOEIC_001', 'TOEIC Exam 1', 'Listening', '3', 30, 2025, 30, 100),
+('TOEIC_001', 'TOEIC Exam 1', 'Listening', '4', 30, 2025, 30, 100),
+('TOEIC_001', 'TOEIC Exam 1', 'Reading', '5', 40, 2025, 30, 150),
+('TOEIC_001', 'TOEIC Exam 1', 'Reading', '6', 12, 2025, 15, 70),
+('TOEIC_001', 'TOEIC Exam 1', 'Reading', '7', 48, 2025, 40, 180),
+-- Bài thi TOEIC Full
+('TOEIC_002', 'TOEIC Full Exam', 'Full', 'Full', 200, 2025, 120, 750);
+
+-- 2. Thêm câu hỏi vào bảng Question (Mỗi part có 3 câu hỏi)
+INSERT INTO Question (exam_section_id, part_number, question_text, option_a, option_b, option_c, option_d, correct_answer)
+SELECT id, part_number, 
+    CONCAT('Question for part ', part_number, ' - 1') AS question_text,
+    'Option A', 'Option B', 'Option C', 'Option D', 'A' FROM Exam_Section WHERE part_number IN ('1', '2', '3', '4', '5', '6', '7')
+UNION ALL
+SELECT id, part_number, 
+    CONCAT('Question for part ', part_number, ' - 2') AS question_text,
+    'Option A', 'Option B', 'Option C', 'Option D', 'B' FROM Exam_Section WHERE part_number IN ('1', '2', '3', '4', '5', '6', '7')
+UNION ALL
+SELECT id, part_number, 
+    CONCAT('Question for part ', part_number, ' - 3') AS question_text,
+    'Option A', 'Option B', 'Option C', 'Option D', 'C' FROM Exam_Section WHERE part_number IN ('1', '2', '3', '4', '5', '6', '7');
+
+-- 3. Thêm 3 chứng chỉ cho mỗi giáo viên
+INSERT INTO Diploma (user_id, certificate_name, score, level, issued_by, issue_date, expiry_date)
+SELECT id, 'TOEIC Certification', ROUND(RAND() * 200 + 600, 2), 'Advanced', 'ETS', '2024-01-15', '2026-01-15' FROM User WHERE role = 'TEACHER'
+UNION ALL
+SELECT id, 'English Proficiency', ROUND(RAND() * 100, 2), 'Intermediate', 'British Council', '2023-05-10', '2025-05-10' FROM User WHERE role = 'TEACHER'
+UNION ALL
+SELECT id, 'Academic IELTS', ROUND(RAND() * 9, 2), 'Upper-Intermediate', 'IDP', '2023-07-20', '2025-07-20' FROM User WHERE role = 'TEACHER';
+
+-- 4. Thêm kết quả thi cho student1 (Giả định user_id = 1 là student1)
+-- Thêm kết quả thi cho student1 với giá trị trực tiếp
+INSERT INTO Exam_Result (user_id, exam_section_id, score, correct_answers, wrong_answers)
+VALUES 
+(1, '2', 600, 145, 120),
+(1, '3', 600, 145, 120);
+
 
