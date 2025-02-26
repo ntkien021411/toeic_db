@@ -37,7 +37,7 @@ class AuthController extends Controller
          // 4. Tạo Access Token & Refresh Token
          $accessToken = Str::random(60); // Token ngẫu nhiên
          $refreshToken = Str::random(60); // Token làm mới
-         $expiredAt = Carbon::now()->addMinutes(1); // Token hết hạn sau 2 phút
+         $expiredAt = Carbon::now()->addMinutes(5); // Token hết hạn sau 2 phút
          $refreshExpiredAt = Carbon::now()->addDays(3); // Refresh token hết hạn sau 3 ngày
  
          // 5. Lưu token vào database
@@ -50,9 +50,10 @@ class AuthController extends Controller
              ]
          );
          $userData = User::where('account_id', $account->id)->first();
-         // Gộp dữ liệu user vào account
-        $account->setAttribute('role', $userData->role);
-        $account->setAttribute('fullname', $userData->full_name);
+         // Kiểm tra nếu $userData là null
+         $account->setAttribute('role', $userData->role ?? '');
+         $account->setAttribute('fullname', $userData->full_name ?? '');
+         
          // 6. Trả về response chứa token
          return response()->json([
              'message' => 'Đăng nhập thành công',

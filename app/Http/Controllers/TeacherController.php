@@ -73,17 +73,32 @@ class TeacherController extends Controller
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|unique:account,username',
             'password' => 'required|string|min:6',
-            'first_name' => 'required|string|max:50',
-            'last_name' => 'required|string|max:50',
-            'birth_date' => 'required|date',
-            'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:15|unique:user,phone',
+            'first_name' => 'nullable|string|max:50',
+            'full_name' => 'nullable|string|max:50',
+            'last_name' => 'nullable|string|max:50',
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|in:MALE,FEMALE,OTHER',
+            'phone' => 'nullable|string|max:11|unique:user,phone',
             'image_link' => 'nullable|url',
             'facebook_link' => 'nullable|url'
+        ], [
+            'username.required' => 'Tên đăng nhập không được để trống.',
+            'username.unique' => 'Tên đăng nhập đã tồn tại.',
+            'password.required' => 'Mật khẩu không được để trống.',
+            'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
+            'birth_date.date' => 'Ngày sinh không hợp lệ.',
+            'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
+            'phone.unique' => 'Số điện thoại đã tồn tại.',
+            'phone.max' => 'Số điện thoại không được vượt quá 11 ký tự.',
+            'image_link.url' => 'Liên kết ảnh không hợp lệ.',
+            'facebook_link.url' => 'Liên kết Facebook không hợp lệ.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 400);
+            return response()->json([
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $validator->errors()
+            ], 400);
         }
 
         $account = Account::create([
@@ -96,40 +111,68 @@ class TeacherController extends Controller
             ['account_id' => $account->id, 'role' => 'TEACHER', 'is_deleted' => false]
         ));
 
-        return response()->json(['message' => 'Giáo viên đã được thêm thành công', 'data' => $teacher], 201);
+        return response()->json([
+            'message' => 'Giáo viên đã được thêm thành công',
+            'data' => $teacher
+        ], 201);
     }
+
 
     // c.4. Chỉnh sửa thông tin giáo viên
     public function update(Request $request, $id)
     {
-        $teacher = User::where('id', $id)->where('role', 'TEACHER')->where('is_deleted', false)->firstOrFail();
-        
+        $teacher = User::where('id', $id)
+            ->where('role', 'TEACHER')
+            ->where('is_deleted', false)
+            ->firstOrFail();
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
             'birth_date' => 'nullable|date',
             'gender' => 'nullable|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:15|unique:user,phone,' . $id,
+            'phone' => 'nullable|string|max:11|unique:user,phone,' . $id,
             'image_link' => 'nullable|url',
             'facebook_link' => 'nullable|url',
             'is_deleted' => 'nullable|boolean'
+        ], [
+            'first_name.max' => 'Họ không được dài hơn 50 ký tự.',
+            'last_name.max' => 'Tên không được dài hơn 50 ký tự.',
+            'birth_date.date' => 'Ngày sinh không hợp lệ.',
+            'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
+            'phone.unique' => 'Số điện thoại đã tồn tại.',
+            'phone.max' => 'Số điện thoại không được vượt quá 11 ký tự.',
+            'image_link.url' => 'Liên kết ảnh không hợp lệ.',
+            'facebook_link.url' => 'Liên kết Facebook không hợp lệ.',
+            'is_deleted.boolean' => 'Trạng thái xóa phải là true hoặc false.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $validator->errors()
+            ], 400);
         }
-    
+
         if ($request->has('is_deleted') && $request->is_deleted == true) {
-            $teacher->update(['deleted_at' => now()]);
-            $teacher->update(['is_deleted' => true]);
+            $teacher->update(['deleted_at' => now(), 'is_deleted' => true]);
+
+            return response()->json([
+                'message' => 'Giáo viên đã bị xóa thành công',
+                'data' => $teacher
+            ], 201);
         } else {
             $teacher->update($request->only([
                 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'image_link', 'facebook_link'
             ]));
+
+            return response()->json([
+                'message' => 'Thông tin giáo viên đã được cập nhật',
+                'data' => $teacher
+            ], 201);
         }
-        
-        return response()->json(['message' => 'Thông tin giáo viên đã được cập nhật', 'data' => $teacher]);
     }
+
 
     
 
