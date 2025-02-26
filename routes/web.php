@@ -45,6 +45,7 @@ Route::get('/status', function () {
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\TeacherController;
 Route::prefix('api')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
@@ -52,13 +53,21 @@ Route::prefix('api')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 
-    // ✅ Bảo vệ API bằng middleware require.token
-    Route::middleware(['require.token'])->group(function () {
-       
+    // ✅ Bảo vệ API bằng middleware 
+    Route::middleware(['checkAdmin', 'checkUser'])->group(function () {
+    });
+
+    Route::middleware(['checkAdmin'])->group(function () {
         //Admin Feature CRUD , Searching , Paging
         Route::get('/accounts', [AdminController::class, 'index']); // Xem danh sách hoặc tìm kiếm tài khoản
         Route::post('/accounts', [AdminController::class, 'store']); // Tạo tài khoản
         Route::put('/accounts/{id}', [AdminController::class, 'update']); // Cập nhật hoặc xóa mềm tài khoản
+        
+        //Teacher Feature CRUD , Searching , Paging
+        Route::get('/teachers', [TeacherController::class, 'index']); // Tìm kiếm và xem danh sách giáo viên
+        Route::get('/teachers/{id}', [TeacherController::class, 'show']); // Xem chi tiết giáo viên
+        Route::post('/teachers', [TeacherController::class, 'store']); // Thêm giáo viên
+        Route::put('/teachers/{id}', [TeacherController::class, 'update']); // Chỉnh sửa hoặc xóa mềm giáo viên
 
     });
 });

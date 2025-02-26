@@ -20,11 +20,14 @@ class Account extends Authenticatable
         'active_date',
         'is_first',
         'created_at',
-        'deleted_at'
+        'deleted_at',
+        'is_deleted'
     ];
 
     protected $hidden = [
         'password', // Ẩn mật khẩu khi query
+        'updated_at', // Ẩn mật khẩu khi query
+        'created_at'
     ];
 
     public $timestamps = false; // Vì `created_at` đã có trong database

@@ -12,23 +12,26 @@ CREATE TABLE Account (
     is_first BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL
+    deleted_at TIMESTAMP NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
-
 -- 3. Bảng User (Tham chiếu đến Account và Role)
 CREATE TABLE User (
     id INT AUTO_INCREMENT PRIMARY KEY,
     account_id INT UNIQUE NOT NULL,
-	role ENUM('TEACHER', 'STUDENT', 'ADMIN') NOT NULL,
+	role ENUM('TEACHER', 'STUDENT','ADMIN') NULL,  -- Cho phép NULL
     first_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NULL,
+    full_name VARCHAR(50) NULL,
     birth_date DATE NULL,
+    gender ENUM('MALE', 'FEMALE', 'OTHER') NULL,  -- Thêm trường giới tính
     phone VARCHAR(15) UNIQUE NULL,
     image_link VARCHAR(255) NULL,
     facebook_link VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_user_account FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE
 );
 
@@ -47,6 +50,7 @@ CREATE TABLE Class (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_class_teacher FOREIGN KEY (teacher_id) REFERENCES User(id) ON DELETE RESTRICT
 );
 
@@ -55,12 +59,13 @@ CREATE TABLE Class_User (
     id INT AUTO_INCREMENT PRIMARY KEY,
     class_id INT NOT NULL,
     user_id INT NOT NULL,
-    e ENUM('TEACHER', 'STUDENT') NOT NULL,
+    role ENUM('TEACHER', 'STUDENT') NOT NULL,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     left_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_class FOREIGN KEY (class_id) REFERENCES Class(id) ON DELETE CASCADE,
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
     UNIQUE (class_id, user_id)
@@ -198,19 +203,19 @@ VALUES ('C101', 'TOEIC Basic', '2024-01-10', '2024-06-10', (SELECT id FROM User 
        ('C105', 'TOEIC Reading Master', '2024-05-01', '2024-10-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher3')));
 
 -- Gán 3 sinh viên vào mỗi lớp
-INSERT INTO Class_User (class_id, user_id, e)
+INSERT INTO Class_User (class_id, user_id, role)
 SELECT (SELECT id FROM Class WHERE class_code = 'C101'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student1', 'student2', 'student3'));
 
-INSERT INTO Class_User (class_id, user_id, e)
+INSERT INTO Class_User (class_id, user_id, role)
 SELECT (SELECT id FROM Class WHERE class_code = 'C102'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student4', 'student5', 'student6'));
 
-INSERT INTO Class_User (class_id, user_id, e)
+INSERT INTO Class_User (class_id, user_id, role)
 SELECT (SELECT id FROM Class WHERE class_code = 'C103'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student7', 'student8', 'student9'));
 
-INSERT INTO Class_User (class_id, user_id, e)
+INSERT INTO Class_User (class_id, user_id, role)
 SELECT (SELECT id FROM Class WHERE class_code = 'C104'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student10', 'student11', 'student12'));
 
-INSERT INTO Class_User (class_id, user_id, e)
+INSERT INTO Class_User (class_id, user_id, role)
 SELECT (SELECT id FROM Class WHERE class_code = 'C105'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student13', 'student14', 'student15'));
 
 
