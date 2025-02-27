@@ -46,7 +46,7 @@ class AdminController extends Controller
 
             return response()->json([
                 'message' => 'Lấy danh sách tài khoản thành công',
-                'code' => "200",
+                'code' => 200,
                 'data' => $accounts->items(),
                 'meta' => $accounts->total() > 0 ?[
                     'total' => $accounts->total(),
@@ -81,7 +81,7 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Dữ liệu nhập vào không hợp lệ',
-                'code' => "400",
+                'code' => 400,
                 'data' => null,
                 'meta' => null,
                 'message_array' =>  $validator->errors()
@@ -102,7 +102,7 @@ class AdminController extends Controller
 
             return response()->json([
                 'message' => 'Tạo tài khoản thành công!',
-                'code' => "201",
+                'code' => 201,
                 'data' => $account,
                 'meta' => null
             ], 201);
@@ -110,7 +110,7 @@ class AdminController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => 'Có lỗi xảy ra, vui lòng thử lại.',
-                'code' => "500",
+                'code' => 500,
                 'data' => null,
                 'meta' => null,
                 'message_array' => $e->getMessage()
@@ -129,7 +129,7 @@ class AdminController extends Controller
         if (!$account) {
             return response()->json([
                 'message' => 'Không tìm thấy tài khoản',
-                'code' => "404",
+                'code' => 404,
                 'data' => null,
                 'meta' => null
             ], 404);
@@ -151,7 +151,7 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Dữ liệu nhập vào không hợp lệ',
-                'code' => "400",
+                'code' => 400,
                 'data' => null,
                 'meta' => null,
                 'message_array' =>  $validator->errors()
@@ -182,7 +182,7 @@ class AdminController extends Controller
     
         return response()->json([
             'message' => 'Cập nhật tài khoản thành công!',
-            'code' => "200",
+            'code' => 200,
             'data' => $account,
             'meta' => null
         ], 200);

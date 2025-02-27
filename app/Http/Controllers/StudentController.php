@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 
-class TeacherController extends Controller
+class StudentController extends Controller
 {
-        // c.1. Tìm kiếm và xem danh sách giáo viên (có phân trang)
+        // c.1. Tìm kiếm và xem danh sách học viên (có phân trang)
     public function index(Request $request)
         {
-            $query = User::query()
-            ->where('role', 'TEACHER')
-            ->where('is_deleted', false);
+           $query = User::query()
+            ->where('role', 'STUDENT')
+            ->where('is_deleted', false); 
 
             if ($request->has('first_name')) {
                 $query->where('first_name', 'like', "%{$request->first_name}%");
@@ -37,47 +37,48 @@ class TeacherController extends Controller
             if ($request->has('gender')) {
                 $query->where('gender', $request->gender);
             }
-        
-            $teachers = $query->paginate($request->input('per_page', 10));
-        
-            return response()->json([
-                'message' => 'Lấy danh sách giáo viên thành công',
-                'code' => 200,
-                'data' => $teachers->items(),
-                'meta' => $teachers->total() > 0 ? [
-                    'total' => $teachers->total(),
-                    'current_page' => $teachers->currentPage(),
-                    'per_page' => $teachers->perPage(),
-                    'last_page' => $teachers->lastPage(),
-                    'next_page_url' => $teachers->nextPageUrl(),
-                    'prev_page_url' => $teachers->previousPageUrl(),
-                    'first_page_url' => $teachers->url(1),
-                    'last_page_url' => $teachers->url($teachers->lastPage())
-                ] : null
-            ],200);
-    }
 
-       // c.2 Xem thông tin chi tiết của giáo viên
+            $students = $query->paginate($request->input('per_page', 10));
+
+            return response()->json([
+                'message' => 'Lấy danh sách học viên thành công',
+                'code' => 200,
+                'data' => $students->items(),
+                'meta' => $students->total() > 0 ? [
+                    'total' => $students->total(),
+                    'current_page' => $students->currentPage(),
+                    'per_page' => $students->perPage(),
+                    'last_page' => $students->lastPage(),
+                    'next_page_url' => $students->nextPageUrl(),
+                    'prev_page_url' => $students->previousPageUrl(),
+                    'first_page_url' => $students->url(1),
+                    'last_page_url' => $students->url($students->lastPage())
+                ] : null
+            ], 200);
+    }
+    
+
+       // c.2 Xem thông tin chi tiết của học viên
         public function show($id)
         {
-            $teacher = User::where('role', 'TEACHER')->where('id', $id)->where('is_deleted', false)->first();
-            if (!$teacher) {
+            $students = User::where('role', 'STUDENT')->where('id', $id)->where('is_deleted', false)->first();
+            if (!$students) {
                 return response()->json([
-                    'message' => 'Không tìm thấy giáo viên.',
+                    'message' => 'Không tìm thấy học viên.',
                     'code' => 404,
                     'data' => null,
                     'meta' => null
                 ], 404);
             }
             return response()->json([
-                'message' => 'Thông tin giáo viên được lấy thành công.',
+                'message' => 'Thông tin  học viên được lấy thành công.',
                 'code' => 200,
-                'data' => $teacher,
+                'data' => $students,
                 'meta' => null
             ], 200);
         }
 
-    // c.3. Thêm giáo viên
+    // c.3. Thêm học viên
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -119,32 +120,32 @@ class TeacherController extends Controller
             'password' => Hash::make($request->password)
         ]);
 
-        $teacher = User::create(array_merge(
-            $request->only(['first_name', 'last_name','full_name', 'birth_date', 'gender', 'phone', 'image_link', 'facebook_link']),
-            ['account_id' => $account->id, 'role' => 'TEACHER', 'is_deleted' => false]
+        $student = User::create(array_merge(
+            $request->only(['first_name', 'last_name','full_name',  'birth_date', 'gender', 'phone', 'image_link', 'facebook_link']),
+            ['account_id' => $account->id, 'role' => 'STUDENT', 'is_deleted' => false]
         ));
 
         return response()->json([
-            'message' => 'Giáo viên đã được thêm thành công.',
+            'message' => 'Học viên đã được thêm thành công.',
             'code' => 201,
-            'data' => $teacher,
+            'data' => $student,
             'meta' => null
         ], 201);
     }
 
 
-    // c.4. Chỉnh sửa thông tin giáo viên
+    // c.4. Chỉnh sửa thông tin học viên
     public function update(Request $request, $id)
     {
         // Kiểm tra giáo viên có tồn tại và có role là TEACHER không
-            $teacher = User::where('id', $id)
-            ->where('role', 'TEACHER')
-            ->where('is_deleted', false)
-            ->first();
+        $teacher = User::where('id', $id)
+        ->where('role', 'STUDENT')
+        ->where('is_deleted', false)
+        ->first();
 
         if (!$teacher) {
             return response()->json([
-                'message' => 'Giáo viên không tồn tại hoặc đã bị xóa.',
+                'message' => 'Học viên không tồn tại hoặc đã bị xóa.',
                 'code' => 404,
                 'data' => $id,
                 'meta' => null
@@ -154,8 +155,8 @@ class TeacherController extends Controller
         $validator = Validator::make($request->all(), [
             'first_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
-            'birth_date' => 'nullable|date',
             'full_name' => 'nullable|string|max:50',
+            'birth_date' => 'nullable|date',
             'gender' => 'nullable|in:MALE,FEMALE,OTHER',
             'phone' => 'nullable|string|max:11|unique:user,phone,' . $id,
             'image_link' => 'nullable|url',
@@ -191,7 +192,7 @@ class TeacherController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Giáo viên đã bị xóa mềm thành công.',
+                'message' => 'Học viên đã bị xóa mềm thành công.',
                 'code' => 200,
                 'data' => $teacher,
                 'meta' => null
@@ -200,11 +201,11 @@ class TeacherController extends Controller
         
         // Cập nhật thông tin giáo viên
         $teacher->update($request->only([
-            'first_name', 'last_name', 'birth_date', 'full_name', 'gender', 'phone', 'image_link', 'facebook_link'
+            'first_name', 'last_name','full_name', 'birth_date', 'gender', 'phone', 'image_link', 'facebook_link'
         ]));
 
         return response()->json([
-            'message' => 'Thông tin giáo viên đã được cập nhật.',
+            'message' => 'Thông tin học viên đã được cập nhật.',
             'code' => 200,
             'data' => $teacher,
             'meta' => null

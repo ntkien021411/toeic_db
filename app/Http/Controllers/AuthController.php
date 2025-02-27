@@ -19,12 +19,15 @@ class AuthController extends Controller
          $validator = Validator::make($request->all(), [
             'username' => 'required',
             'password' => 'required',
-         ]);
+         ] ,[
+            'username.required'  => 'Username là bắt buộc.',
+            'password.required'    => 'Password là bắt buộc.'
+        ]);
  
          if ($validator->fails()) {
             return response()->json([
                 'message' => 'Login: Dữ liệu không hợp lệ',
-                'code' => "400",
+                'code' => 400,
                 'data' => null,
                 'meta' => null
             ], 400);
@@ -38,7 +41,7 @@ class AuthController extends Controller
          if (!$account || !Hash::check($request->password, $account->password)) {
             return response()->json([
                 'message' => 'Tài khoản hoặc mật khẩu không chính xác',
-                'code' => "404",
+                'code' => 404,
                 'data' => null,
                 'meta' => null
             ], 404);        
@@ -47,7 +50,7 @@ class AuthController extends Controller
          // 4. Tạo Access Token & Refresh Token
          $accessToken = Str::random(60); // Token ngẫu nhiên
          $refreshToken = Str::random(60); // Token làm mới
-         $expiredAt = Carbon::now()->addMinutes(5); // Token hết hạn sau 2 phút
+         $expiredAt = Carbon::now()->addMinutes(30); // Token hết hạn sau 2 phút
          $refreshExpiredAt = Carbon::now()->addDays(3); // Refresh token hết hạn sau 3 ngày
  
          // 5. Lưu token vào database
@@ -83,14 +86,18 @@ class AuthController extends Controller
      {
          // 1. Kiểm tra đầu vào
          $validator = Validator::make($request->all(), [
-             'user_id' => 'required|integer',
-             'refresh_token' => 'required',
-         ]);
+            'user_id' => 'required|integer',
+            'refresh_token' => 'required',
+        ],[
+            'user_id.required'  => 'User ID là bắt buộc.',
+            'user_id.integer'   => 'User ID phải là số nguyên.',
+            'refresh_token.required' => 'Refresh token là bắt buộc.'
+        ]);
      
          if ($validator->fails()) {
             return response()->json([
                 'message' => 'Refresh: Dữ liệu không hợp lệ',
-                'code' => "400",
+                'code' => 400,
                 'data' => null,
                 'meta' => null
             ], 400);
@@ -104,7 +111,7 @@ class AuthController extends Controller
         if (!$token) {
             return response()->json([
                 'message' => 'Refresh Token không hợp lệ',
-                'code' => "401",
+                'code' => 401,
                 'data' => null,
                 'meta' => null
             ], 401);
@@ -113,7 +120,7 @@ class AuthController extends Controller
         if (now()->greaterThan($token->expired_at)) {
             return response()->json([
                 'message' => 'Refresh Token đã hết hạn',
-                'code' => "401",
+                'code' => 401,
                 'data' => null,
                 'meta' => null
             ], 401);
@@ -132,7 +139,7 @@ class AuthController extends Controller
          // 5. Trả về token mới
          return response()->json([
             'message' => 'Làm mới token thành công',
-            'code' => "200",
+            'code' => 200,
             'data' => [
                 'token' => $newToken,
                 'expires_in' => $expiredAt
@@ -149,7 +156,7 @@ class AuthController extends Controller
         if (!$tokenString) {
             return response()->json([
                 'message' => 'Vui lòng cung cấp Token',
-                'code' => "401",
+                'code' => 401,
                 'data' => null,
                 'meta' => null
             ], 401);
@@ -163,7 +170,7 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Logout: Dữ liệu không hợp lệ',
-                'code' => "400",
+                'code' => 400,
                 'data' => null,
                 'meta' => null
             ], 400);
@@ -175,7 +182,7 @@ class AuthController extends Controller
         if (!$token) {
             return response()->json([
                 'message' => 'Token không hợp lệ',
-                'code' => "401",
+                'code' => 401,
                 'data' => null,
                 'meta' => null
             ], 401);
@@ -185,7 +192,7 @@ class AuthController extends Controller
         if ($token->account_id != $request->user_id) {
             return response()->json([
                 'message' => 'Token không thuộc về user',
-                'code' => "403",
+                'code' => 403,
                 'data' => null,
                 'meta' => null
             ], 403);
@@ -196,7 +203,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Đăng xuất thành công',
-            'code' => "200",
+            'code' => 200,
             'data' => null,
             'meta' => null
         ], 200);

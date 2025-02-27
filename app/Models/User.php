@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
 class User extends Model
 {
     use HasFactory;
@@ -12,7 +11,7 @@ class User extends Model
     protected $table = 'User'; // Chỉ định bảng tương ứng trong database
 
     protected $fillable = [
-        'account_id', 'role', 'first_name', 'last_name', 'birth_date',
+      'id', 'account_id', 'role', 'first_name', 'last_name', 'full_name','birth_date',
         'gender', 'phone', 'image_link', 'facebook_link', 'is_deleted', 'created_at', 'deleted_at'
     ];
     

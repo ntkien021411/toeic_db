@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\ClassStudent;
+use App\Models\Classes;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -12,9 +12,10 @@ use Illuminate\Support\Facades\Validator;
 class ClassController extends Controller
 {
     // c.1. Tìm kiếm và xem danh sách class  (có phân trang)
+    // /class?teacher_id=2
     public function index(Request $request)
         {
-            $query = ClassStudent::query()
+            $query = Classes::query()
             ->where('is_deleted', false);
 
         // Lọc theo các tham số từ request
@@ -45,7 +46,7 @@ class ClassController extends Controller
 
         return response()->json([
             'message' => 'Lấy danh sách lớp học thành công',
-            'code' => "200",
+            'code' => 200,
             'data' => $classes->items(),
             'meta' => $classes->total() > 0 ?[
                 'total' => $classes->total(),
@@ -62,12 +63,12 @@ class ClassController extends Controller
 
     public function show($id)
     {
-        $class = ClassStudent::where('id', $id)->where('is_deleted', false)->first();
+        $class = Classes::where('id', $id)->where('is_deleted', false)->first();
 
         if (!$class) {
             return response()->json([
                 'message' => 'Lớp học không tồn tại',
-                'code' => "404",
+                'code' => 404,
                 'data' => null,
                'meta' => null
             ], 404);
@@ -106,14 +107,14 @@ class ClassController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Dữ liệu nhập vào không hợp lệ',
-                'code' => "400",
+                'code' => 400,
                 'data' => null,
                 'meta' => null,
                 'message_array' =>  $validator->errors()
             ], 400);
         }
     
-        $class = ClassStudent::create($validator->validated());
+        $class = Classes::create($validator->validated());
 
         return response()->json([
             'message' => 'Lớp học đã được tạo thành công.',
@@ -125,12 +126,12 @@ class ClassController extends Controller
 
     public function update(Request $request, $id)
     {
-        $class = ClassStudent::where('id', $id)->where('is_deleted', false)->first();
+        $class = Classes::where('id', $id)->where('is_deleted', false)->first();
 
         if (!$class) {
             return response()->json([
                 'message' => 'Lớp học không tồn tại',
-                'code' => "404",
+                'code' => 404,
                 'data' => null,
                 'meta' => null
             ], 404);
@@ -150,7 +151,7 @@ class ClassController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Dữ liệu nhập vào không hợp lệ',
-                'code' => "400",
+                'code' => 400,
                 'data' => null,
                 'meta' => null,
                 'message_array' =>  $validator->errors()

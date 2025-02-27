@@ -46,6 +46,7 @@ Route::get('/status', function () {
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DiplomaController;
 use App\Http\Controllers\ClassUserController;
@@ -56,41 +57,43 @@ Route::prefix('api')->group(function () {
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
-
     // ✅ Bảo vệ API bằng middleware 
-    // voiyLOO7gbnmv9PYQWLTfpNxBRnPynheHWWxXrysDbMDGaa0HKFLvA8tdMt0
-
-    // 0WgqLG2Tc2cRfoXIih9YuYMeVpomogzEiBtiteKwiA6JBeJjDZ8kWORcWwGd
-    //Cả User và Admin đều dùng dc 
-        
     //Chỉ Admin dùng được
     Route::middleware(['checkAdmin'])->group(function () {
-        //Admin Feature CRUD , Searching , Paging
+        //Tài khoản
         Route::get('/accounts', [AdminController::class, 'index']); // Xem danh sách hoặc tìm kiếm tài khoản
         Route::post('/accounts', [AdminController::class, 'store']); // Tạo tài khoản
         Route::put('/accounts/{id}', [AdminController::class, 'update']); // Cập nhật hoặc xóa mềm tài khoản
         
-        //Teacher Feature CRUD , Searching , Paging
+        //Giáo viên
         Route::get('/teachers', [TeacherController::class, 'index']); // Tìm kiếm và xem danh sách giáo viên
-
         Route::get('/teachers/{id}', [TeacherController::class, 'show']); // Xem chi tiết giáo viên
         Route::post('/teachers', [TeacherController::class, 'store']); // Thêm giáo viên
         Route::put('/teachers/{id}', [TeacherController::class, 'update']); // Chỉnh sửa hoặc xóa mềm giáo viên
 
         // Lớp học của giáo viên
-        Route::get('/class', [ClassController::class, 'index']);  // Xem danh sách lớp học
-
+        Route::get('/class', [ClassController::class, 'index']);  // Xem danh sách tất cả lớp học hoặc theo giáo viên
         Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
         Route::get('/class/{id}', [ClassController::class, 'show']); // Xem chi tiết lớp học
         Route::put('/class/{id}', [ClassController::class, 'update']); // Sửa và xóa mềm lớp học
 
+        //Học viên
+        Route::get('/students', [StudentController::class, 'index']); // Tìm kiếm và xem danh sách giáo viên
+        Route::get('/students/{id}', [StudentController::class, 'show']); // Xem chi tiết giáo viên
+        Route::post('/students', [StudentController::class, 'store']); // Thêm giáo viên
+        Route::put('/students/{id}', [StudentController::class, 'update']); // Chỉnh sửa hoặc xóa mềm giáo viên
 
-        // Route::post('/classes/{class_id}/students', [ClassUserController::class, 'addStudent']);
+        //Thêm học viên vào lớp
+        Route::post('/classes/students', [ClassUserController::class, 'addStudentToClass']);//Thêm học sinh vào lớp học
+        //Xem lớp học của học viên
+        Route::get('/classes/students/{user_id}', [ClassUserController::class, 'getStudentClasses']);//Xem lớp học của học viên
 
         // Bằng cấp của giáo viên
-        // Route::get('/diploma', [DiplomaController::class, 'index']);  // Xem danh sách bằng cấp
-        // Route::post('/diploma', [DiplomaController::class, 'store']); // Thêm bằng cấp
-        // Route::put('/diploma/{id}', [DiplomaController::class, 'update']); // Sửa bằng cấp
-        // Route::get('/class/{id}', [DiplomaController::class, 'show']); // Xem chi tiết bằng cấp   
+        Route::get('/diploma', [DiplomaController::class, 'index']);  // Xem danh sách tất cả bằng cấp hoặc của 1 giáo viên
+        Route::post('/diploma', [DiplomaController::class, 'store']); // Thêm bằng cấp
+        Route::put('/diploma/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
+        Route::get('/diploma/{id}', [DiplomaController::class, 'show']); // Xem chi tiết bằng cấp   
+   
+        
     });
 });
