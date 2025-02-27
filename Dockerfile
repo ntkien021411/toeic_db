@@ -24,7 +24,9 @@ COPY .env.example .env
 
 RUN composer install --no-dev --optimize-autoloader
 
+# **Cấp quyền cho Laravel**
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+RUN chmod -R 777 /var/www/storage /var/www/bootstrap/cache
 
 EXPOSE 9000
 
