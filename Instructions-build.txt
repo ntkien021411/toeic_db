@@ -7,4 +7,5 @@ docker exec -it laravel_app php artisan key:generate
 
 //SERVER
 //Chạy trên server nếu lỗi 
-sudo chown -R ubuntu:ubuntu(user server) storage bootstrap/cache
+sudo chown -R ubuntu:ubuntu storage bootstrap/cache
+sudo chmod -R 777 storage bootstrap/cache
