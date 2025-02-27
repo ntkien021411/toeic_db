@@ -10,7 +10,7 @@ class Diploma extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'diploma';
+    protected $table = 'Diploma';
 
     protected $fillable = [
         'user_id', 'certificate_name', 'score', 'level',

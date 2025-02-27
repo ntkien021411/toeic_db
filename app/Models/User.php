@@ -9,7 +9,7 @@ class User extends Model
 {
     use HasFactory;
     
-    protected $table = 'user'; // Chỉ định bảng tương ứng trong database
+    protected $table = 'User'; // Chỉ định bảng tương ứng trong database
 
     protected $fillable = [
         'account_id', 'role', 'first_name', 'last_name', 'birth_date',

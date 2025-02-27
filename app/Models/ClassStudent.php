@@ -9,7 +9,7 @@ class ClassStudent extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'class';
+    protected $table = 'Class';
 
     protected $fillable = [
         'class_code', 'class_name', 'start_date', 'end_date',

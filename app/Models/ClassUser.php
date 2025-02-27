@@ -10,7 +10,7 @@ class ClassUser extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'class_user';
+    protected $table = 'Class_user';
 
     protected $fillable = [
         'class_id', 'user_id', 'joined_at', 'left_at', 'is_deleted'

@@ -1,5 +1,4 @@
 docker-compose up -d --build
 docker exec -it laravel_app cp /var/www/.env.example /var/www/.env
 docker-compose exec app composer install
-docker-compose exec app composer require laravel/sanctum:^3.2
-docker-compose exec app php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+docker exec -it laravel_app php artisan key:generate
