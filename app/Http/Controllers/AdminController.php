@@ -83,10 +83,9 @@ class AdminController extends Controller
                 'message' => 'Dữ liệu nhập vào không hợp lệ',
                 'code' => "400",
                 'data' => null,
-                'meta' => [
-                    'errors' => $validator->errors()
-                ]
-            ], 404);
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
         }
 
         DB::beginTransaction();
@@ -113,7 +112,8 @@ class AdminController extends Controller
                 'message' => 'Có lỗi xảy ra, vui lòng thử lại.',
                 'code' => "500",
                 'data' => null,
-                'meta' => $e->getMessage()
+                'meta' => null,
+                'message_array' => $e->getMessage()
             ], 500);
         }
     }
@@ -150,13 +150,12 @@ class AdminController extends Controller
     
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu nhập vào không hợp lệ.',
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
                 'code' => "400",
                 'data' => null,
-                'meta' => [
-                    'errors' => $validator->errors()
-                ]
-            ], 404);
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
         }
     
         // Chỉ lấy các trường có trong request để cập nhật

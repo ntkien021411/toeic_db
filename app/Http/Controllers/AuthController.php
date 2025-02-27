@@ -93,7 +93,7 @@ class AuthController extends Controller
                 'code' => "400",
                 'data' => null,
                 'meta' => null
-            ], 404);
+            ], 400);
          }
      
          // 2. Kiểm tra token hợp lệ với user_id
@@ -166,7 +166,7 @@ class AuthController extends Controller
                 'code' => "400",
                 'data' => null,
                 'meta' => null
-            ], 404);
+            ], 400);
         }
 
         // 3. Tìm token trong database

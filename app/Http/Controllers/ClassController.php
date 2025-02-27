@@ -67,7 +67,7 @@ class ClassController extends Controller
         if (!$class) {
             return response()->json([
                 'message' => 'Lớp học không tồn tại',
-                'code' => "400",
+                'code' => "404",
                 'data' => null,
                'meta' => null
             ], 404);
@@ -105,13 +105,12 @@ class ClassController extends Controller
     
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu không hợp lệ.',
-                'code' => 400,
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => "400",
                 'data' => null,
-                'meta' => [
-                    'errors' => $validator->errors()
-                ]
-            ], 404);
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
         }
     
         $class = ClassStudent::create($validator->validated());
@@ -131,7 +130,7 @@ class ClassController extends Controller
         if (!$class) {
             return response()->json([
                 'message' => 'Lớp học không tồn tại',
-                'code' => 400,
+                'code' => "404",
                 'data' => null,
                 'meta' => null
             ], 404);
@@ -150,13 +149,12 @@ class ClassController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu không hợp lệ',
-                'code' => 400,
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => "400",
                 'data' => null,
-                'meta' => [
-                    'errors' => $validator->errors()
-                ]
-            ], 404);
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
         }
 
         $validatedData = $validator->validated();

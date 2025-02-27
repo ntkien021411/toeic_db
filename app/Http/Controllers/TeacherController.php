@@ -109,13 +109,12 @@ class TeacherController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu không hợp lệ.',
-                'code' => 400,
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => "400",
                 'data' => null,
-                'meta' => [
-                    'errors' => $validator->errors()
-                ]
-            ], 404);
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
         }
 
         $account = Account::create([
@@ -168,13 +167,12 @@ class TeacherController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu không hợp lệ.',
-                'code' => 400,
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => "400",
                 'data' => null,
-                'meta' => [
-                    'errors' => $validator->errors()
-                ]
-            ], 404);
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
         }
 
         if ($request->has('is_deleted') && $request->is_deleted == true) {
