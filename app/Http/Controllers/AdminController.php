@@ -44,17 +44,21 @@ class AdminController extends Controller
             ])
             ->paginate($request->input('per_page', 10)); // Mặc định lấy 10 record mỗi trang
 
-        return response()->json([
-            'data' => $accounts->items(),
-            'total' => $accounts->total(),
-            'current_page' => $accounts->currentPage(),
-            'per_page' => $accounts->perPage(),
-            'last_page' => $accounts->lastPage(),
-            'next_page_url' => $accounts->nextPageUrl(),
-            'prev_page_url' => $accounts->previousPageUrl(),
-            'first_page_url' => $accounts->url(1),
-            'last_page_url' => $accounts->url($accounts->lastPage())
-        ]);
+            return response()->json([
+                'message' => 'Lấy danh sách tài khoản thành công',
+                'code' => "200",
+                'data' => $accounts->items(),
+                'meta' => $accounts->total() > 0 ?[
+                    'total' => $accounts->total(),
+                    'current_page' => $accounts->currentPage(),
+                    'per_page' => $accounts->perPage(),
+                    'last_page' => $accounts->lastPage(),
+                    'next_page_url' => $accounts->nextPageUrl(),
+                    'prev_page_url' => $accounts->previousPageUrl(),
+                    'first_page_url' => $accounts->url(1),
+                    'last_page_url' => $accounts->url($accounts->lastPage())
+                ] : null
+            ],200);
     }
 
     // Data test
@@ -76,9 +80,13 @@ class AdminController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu nhập vào không hợp lệ.',
-                'errors' => $validator->errors()
-            ], 400);
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => "400",
+                'data' => null,
+                'meta' => [
+                    'errors' => $validator->errors()
+                ]
+            ], 404);
         }
 
         DB::beginTransaction();
@@ -95,13 +103,17 @@ class AdminController extends Controller
 
             return response()->json([
                 'message' => 'Tạo tài khoản thành công!',
-                'account' => $account
+                'code' => "201",
+                'data' => $account,
+                'meta' => null
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Có lỗi xảy ra, vui lòng thử lại.',
-                'error' => $e->getMessage()
+                'code' => "500",
+                'data' => null,
+                'meta' => $e->getMessage()
             ], 500);
         }
     }
@@ -113,6 +125,15 @@ class AdminController extends Controller
     public function update(Request $request, $id)
     {
         $account = Account::findOrFail($id);
+
+        if (!$account) {
+            return response()->json([
+                'message' => 'Không tìm thấy tài khoản',
+                'code' => "404",
+                'data' => null,
+                'meta' => null
+            ], 404);
+        }
     
         $validator = Validator::make($request->all(), [
             'email' => 'nullable|email|unique:account,email,' . $id,
@@ -130,12 +151,13 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Dữ liệu nhập vào không hợp lệ.',
-                'errors' => $validator->errors()
-            ], 400);
+                'code' => "400",
+                'data' => null,
+                'meta' => [
+                    'errors' => $validator->errors()
+                ]
+            ], 404);
         }
-    
-        // Chỉ lấy các trường có trong request để cập nhật
-        $data = $request->only(['email', 'active_status', 'is_first']);
     
         // Chỉ lấy các trường có trong request để cập nhật
         $data = $request->only(['email', 'active_status', 'is_first']);
@@ -161,8 +183,10 @@ class AdminController extends Controller
     
         return response()->json([
             'message' => 'Cập nhật tài khoản thành công!',
-            'data' => $account
-        ]);
+            'code' => "200",
+            'data' => $account,
+            'meta' => null
+        ], 200);
     }
 
 

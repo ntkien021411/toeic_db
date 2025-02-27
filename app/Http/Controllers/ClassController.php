@@ -44,16 +44,20 @@ class ClassController extends Controller
         $classes = $query->paginate($request->input('per_page', 10));
 
         return response()->json([
+            'message' => 'Lấy danh sách lớp học thành công',
+            'code' => "200",
             'data' => $classes->items(),
-            'total' => $classes->total(),
-            'current_page' => $classes->currentPage(),
-            'per_page' => $classes->perPage(),
-            'last_page' => $classes->lastPage(),
-            'next_page_url' => $classes->nextPageUrl(),
-            'prev_page_url' => $classes->previousPageUrl(),
-            'first_page_url' => $classes->url(1),
-            'last_page_url' => $classes->url($classes->lastPage())
-        ]);
+            'meta' => $classes->total() > 0 ?[
+                'total' => $classes->total(),
+                'current_page' => $classes->currentPage(),
+                'per_page' => $classes->perPage(),
+                'last_page' => $classes->lastPage(),
+                'next_page_url' => $classes->nextPageUrl(),
+                'prev_page_url' => $classes->previousPageUrl(),
+                'first_page_url' => $classes->url(1),
+                'last_page_url' => $classes->url($classes->lastPage())
+            ] : null
+        ],200);
     }
 
     public function show($id)
@@ -61,10 +65,20 @@ class ClassController extends Controller
         $class = ClassStudent::where('id', $id)->where('is_deleted', false)->first();
 
         if (!$class) {
-            return response()->json(['message' => 'Lớp học không tồn tại'], 404);
+            return response()->json([
+                'message' => 'Lớp học không tồn tại',
+                'code' => "400",
+                'data' => null,
+               'meta' => null
+            ], 404);
         }
 
-        return response()->json($class);
+        return response()->json([
+            'message' => 'Thông tin lớp học được lấy thành công.',
+            'code' => 200,
+            'data' => $class,
+            'meta' => null
+        ], 200);
     }
 
     public function store(Request $request)
@@ -91,16 +105,22 @@ class ClassController extends Controller
     
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu không hợp lệ',
-                'errors'  => $validator->errors()
-            ], 400);
+                'message' => 'Dữ liệu không hợp lệ.',
+                'code' => 400,
+                'data' => null,
+                'meta' => [
+                    'errors' => $validator->errors()
+                ]
+            ], 404);
         }
     
         $class = ClassStudent::create($validator->validated());
-    
+
         return response()->json([
             'message' => 'Lớp học đã được tạo thành công.',
-            'data' => $class
+            'code' => 201,
+            'data' => $class,
+            'meta' => null
         ], 201);
     }
 
@@ -109,7 +129,12 @@ class ClassController extends Controller
         $class = ClassStudent::where('id', $id)->where('is_deleted', false)->first();
 
         if (!$class) {
-            return response()->json(['message' => 'Lớp học không tồn tại'], 404);
+            return response()->json([
+                'message' => 'Lớp học không tồn tại',
+                'code' => 400,
+                'data' => null,
+                'meta' => null
+            ], 404);
         }
 
         $validator = Validator::make($request->all(), [
@@ -126,8 +151,12 @@ class ClassController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Dữ liệu không hợp lệ',
-                'errors'  => $validator->errors()
-            ], 400);
+                'code' => 400,
+                'data' => null,
+                'meta' => [
+                    'errors' => $validator->errors()
+                ]
+            ], 404);
         }
 
         $validatedData = $validator->validated();

@@ -43,18 +43,21 @@ class TeacherController extends Controller
                 'user.image_link', 'user.facebook_link', 'user.birth_date', 'user.gender'
             ])->paginate($request->input('per_page', 10));
         
-
-        return response()->json([
-            'data' => $teachers->items(),
-            'total' => $teachers->total(),
-            'current_page' => $teachers->currentPage(),
-            'per_page' => $teachers->perPage(),
-            'last_page' => $teachers->lastPage(),
-            'next_page_url' => $teachers->nextPageUrl(),
-            'prev_page_url' => $teachers->previousPageUrl(),
-            'first_page_url' => $teachers->url(1),
-            'last_page_url' => $teachers->url($teachers->lastPage())
-        ]);
+            return response()->json([
+                'message' => 'Lấy danh sách giáo viên thành công',
+                'code' => "200",
+                'data' => $teachers->items(),
+                'meta' => $teachers->total() > 0 ? [
+                    'total' => $teachers->total(),
+                    'current_page' => $teachers->currentPage(),
+                    'per_page' => $teachers->perPage(),
+                    'last_page' => $teachers->lastPage(),
+                    'next_page_url' => $teachers->nextPageUrl(),
+                    'prev_page_url' => $teachers->previousPageUrl(),
+                    'first_page_url' => $teachers->url(1),
+                    'last_page_url' => $teachers->url($teachers->lastPage())
+                ] : null
+            ],200);
     }
 
        // c.2 Xem thông tin chi tiết của giáo viên
@@ -62,9 +65,19 @@ class TeacherController extends Controller
         {
             $teacher = User::where('role', 'TEACHER')->where('id', $id)->where('is_deleted', false)->first();
             if (!$teacher) {
-                return response()->json(['message' => 'Không tìm thấy giáo viên.'], 404);
+                return response()->json([
+                    'message' => 'Không tìm thấy giáo viên.',
+                    'code' => 404,
+                    'data' => null,
+                    'meta' => null
+                ], 404);
             }
-            return response()->json($teacher);
+            return response()->json([
+                'message' => 'Thông tin giáo viên được lấy thành công.',
+                'code' => 200,
+                'data' => $teacher,
+                'meta' => null
+            ], 200);
         }
 
     // c.3. Thêm giáo viên
@@ -96,9 +109,13 @@ class TeacherController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu không hợp lệ',
-                'errors' => $validator->errors()
-            ], 400);
+                'message' => 'Dữ liệu không hợp lệ.',
+                'code' => 400,
+                'data' => null,
+                'meta' => [
+                    'errors' => $validator->errors()
+                ]
+            ], 404);
         }
 
         $account = Account::create([
@@ -112,8 +129,10 @@ class TeacherController extends Controller
         ));
 
         return response()->json([
-            'message' => 'Giáo viên đã được thêm thành công',
-            'data' => $teacher
+            'message' => 'Giáo viên đã được thêm thành công.',
+            'code' => 201,
+            'data' => $teacher,
+            'meta' => null
         ], 201);
     }
 
@@ -149,27 +168,35 @@ class TeacherController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Dữ liệu không hợp lệ',
-                'errors' => $validator->errors()
-            ], 400);
+                'message' => 'Dữ liệu không hợp lệ.',
+                'code' => 400,
+                'data' => null,
+                'meta' => [
+                    'errors' => $validator->errors()
+                ]
+            ], 404);
         }
 
         if ($request->has('is_deleted') && $request->is_deleted == true) {
             $teacher->update(['deleted_at' => now(), 'is_deleted' => true]);
 
             return response()->json([
-                'message' => 'Giáo viên đã bị xóa thành công',
-                'data' => $teacher
-            ], 201);
+                'message' => 'Giáo viên đã bị xóa mềm thành công',
+                'code' => 200,
+                'data' => $teacher,
+                'meta' => null
+            ], 200);
         } else {
             $teacher->update($request->only([
                 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'image_link', 'facebook_link'
             ]));
 
             return response()->json([
-                'message' => 'Thông tin giáo viên đã được cập nhật',
-                'data' => $teacher
-            ], 201);
+                'message' => 'Thông tin giáo viên đã được cập nhật.',
+                'code' => 200,
+                'data' => $teacher,
+                'meta' => null
+            ], 200);
         }
     }
 
