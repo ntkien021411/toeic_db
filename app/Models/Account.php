@@ -32,6 +32,11 @@ class Account extends Authenticatable
 
     public $timestamps = false; // Vì `created_at` đã có trong database
 
+    // Thêm quan hệ với User
+    public function user()
+    {
+        return $this->hasOne(User::class, 'account_id');
+    }
     public function tokens()
     {
         return $this->hasMany(Token::class, 'account_id');

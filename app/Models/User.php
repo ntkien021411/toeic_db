@@ -19,4 +19,10 @@ class User extends Model
         'updated_at', // Ẩn mật khẩu khi query
         'created_at'
     ];
+
+     // Thiết lập quan hệ với Account
+     public function account()
+     {
+         return $this->belongsTo(Account::class, 'account_id');
+     }
 }

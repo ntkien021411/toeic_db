@@ -16,13 +16,15 @@ class AdminController extends Controller
     // /api/accounts?username=student&page=1&email=student@gmail.com
     public function index(Request $request)
     {
-        $query = Account::query()
-        ->where('account.is_deleted', false) // Chỉ lấy account chưa bị xóa
-        ->leftJoin('user', 'user.account_id', '=', 'account.id')
+        $query = Account::query() // Bỏ with('user') để không trả về user
+        ->where('is_deleted', false)
         ->where(function ($q) {
-            $q->whereNull('user.id') // Nếu không có user nào liên kết
-            ->orWhere('user.role', '!=', 'ADMIN'); // Hoặc user không phải ADMIN
-        });
+            $q->whereDoesntHave('user') // Nếu không có user nào liên kết
+              ->orWhereHas('user', function ($subQuery) {
+                  $subQuery->where('role', '!=', 'ADMIN'); // Hoặc user không phải ADMIN
+              });
+        })
+        ->select(['id', 'username', 'email', 'active_status', 'created_at']); // Chỉ lấy dữ liệu từ bảng account
 
         // Lọc theo username nếu có
         if ($request->has('username')) {
@@ -35,14 +37,7 @@ class AdminController extends Controller
         }
 
         // Chỉ chọn các trường cần thiết
-        $accounts = $query->select([
-                'account.id',
-                'account.username',
-                'account.email',
-                'account.active_status',
-                'account.created_at'
-            ])
-            ->paginate($request->input('per_page', 10)); // Mặc định lấy 10 record mỗi trang
+        $accounts = $query->paginate($request->input('per_page', 10)); // Mặc định lấy 10 record mỗi trang
 
             return response()->json([
                 'message' => 'Lấy danh sách tài khoản thành công',
