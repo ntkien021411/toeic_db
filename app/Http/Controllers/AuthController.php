@@ -64,7 +64,6 @@ class AuthController extends Controller
          );
          $userData = User::where('account_id', $account->id)->first();
          // Kiểm tra nếu $userData là null
-         $account->setAttribute('role', $userData->role ?? '');
          $account->setAttribute('fullname', $userData->full_name ?? '');
          
          // 6. Trả về response chứa token
@@ -76,6 +75,7 @@ class AuthController extends Controller
                 'refresh_token' => $refreshToken,
                 'expires_in' => $expiredAt,
                 'account' => $account,
+                'role' => $userData->role ?? ''
             ],
             'meta' => null
         ], 200);

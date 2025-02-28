@@ -50,6 +50,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DiplomaController;
 use App\Http\Controllers\ClassUserController;
+use App\Http\Controllers\ExamResultController;
 
 Route::prefix('api')->group(function () {
     Route::prefix('auth')->group(function () {
@@ -78,10 +79,10 @@ Route::prefix('api')->group(function () {
         Route::put('/class/{id}', [ClassController::class, 'update']); // Sửa và xóa mềm lớp học
 
         //Học viên
-        Route::get('/students', [StudentController::class, 'index']); // Tìm kiếm và xem danh sách giáo viên
-        Route::get('/students/{id}', [StudentController::class, 'show']); // Xem chi tiết giáo viên
-        Route::post('/students', [StudentController::class, 'store']); // Thêm giáo viên
-        Route::put('/students/{id}', [StudentController::class, 'update']); // Chỉnh sửa hoặc xóa mềm giáo viên
+        Route::get('/students', [StudentController::class, 'index']); // Tìm kiếm và xem danh sách học viên
+        Route::get('/students/{id}', [StudentController::class, 'show']); // Xem chi tiết học viên
+        Route::post('/students', [StudentController::class, 'store']); // Thêm học viên
+        Route::put('/students/{id}', [StudentController::class, 'update']); // Chỉnh sửa hoặc xóa mềm học viên
 
         //Thêm học viên vào lớp
         Route::post('/classes/students', [ClassUserController::class, 'addStudentToClass']);//Thêm học sinh vào lớp học
@@ -93,7 +94,12 @@ Route::prefix('api')->group(function () {
         Route::post('/diploma', [DiplomaController::class, 'store']); // Thêm bằng cấp
         Route::put('/diploma/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
         Route::get('/diploma/{id}', [DiplomaController::class, 'show']); // Xem chi tiết bằng cấp   
-   
+
+        //Lịch sử làm bài thi của học viên 
+        Route::get('/exam-results/history/{user_id}', [ExamResultController::class, 'examHistory']); //Xem danh sách lịch sử bài thi của học viên
+        Route::get('/exam-results/search', [ExamResultController::class, 'searchExamResults']); //Tìm kiếm bài thi học viên đã làm
+        Route::get('/exam-results/detail/{exam_id}', [ExamResultController::class, 'examDetail']); //Xem thông tin chi tiết bài thi
+        //Route::get('/exam-results/analysis/{user_id}', [ExamResultController::class, 'analyzePerformance']); 
         
     });
 });
