@@ -28,12 +28,12 @@ class AdminController extends Controller
 
         // Lọc theo username nếu có
         if ($request->has('username')) {
-            $query->where('account.username', 'like', '%' . $request->username . '%');
+            $query->where('username', 'like', '%' . $request->username . '%');
         }
 
         // Lọc theo email nếu có
         if ($request->has('email')) {
-            $query->where('account.email', 'like', '%' . $request->email . '%');
+            $query->where('email', 'like', '%' . $request->email . '%');
         }
 
         // Chỉ chọn các trường cần thiết
