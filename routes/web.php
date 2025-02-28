@@ -58,6 +58,7 @@ Route::prefix('api')->group(function () {
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/', [AuthController::class, 'checkAccount']);
+        Route::get('/forgot-password', [AuthController::class, 'forgotPassword']);
     });
     // ✅ Bảo vệ API bằng middleware 
     //Chỉ Admin dùng được

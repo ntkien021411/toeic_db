@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SendPasswordMail;
 use Illuminate\Support\Str;
 use App\Models\Account;
 use App\Models\Token;
@@ -252,4 +254,68 @@ class AuthController extends Controller
             'meta' => null
         ], 200);
      }
+
+    //  "http://localhost:8000/api/forgot-password?email=user@example.com"
+    public function forgotPassword(Request $request)
+    {
+            // Lấy email từ query string
+            $email = trim($request->query('email'));
+
+            // Kiểm tra nếu không có email
+            if (!$email) {
+                return response()->json([
+                    'message' => 'Vui lòng cung cấp email',
+                    'code' => 400,
+                    'data' => null,
+                ], 400);
+            }
+
+            // Tìm user theo email
+            $account = Account::where('email', $email)->first();
+
+            if (!$account) {
+                return response()->json([
+                    'message' => 'Email không tồn tại',
+                    'code' => 404,
+                    'data' => null,
+                ], 404);
+            }
+            $user = User::where('account_id', $account->id)->first();
+            if ($user->role === 'ADMIN') {
+                return response()->json([
+                    'message' => 'Tài không ADMIN không sử dụng được chức năng này ',
+                    'code' => 404,
+                    'data' => null,
+                ], 404);
+            }
+
+
+            // Tạo mật khẩu mới ngẫu nhiên
+            $newPassword = Str::random(10);
+
+            // Cập nhật mật khẩu mới vào database (đã hash)
+            $account->password = Hash::make($newPassword);
+            $account->save();
+
+            // Gửi email chứa mật khẩu mới (Dùng queue để gửi không bị chậm)
+            try {
+                Mail::to($account->email)->queue(new SendPasswordMail($account, $newPassword));
+
+                return response()->json([
+                    'message' => 'Mật khẩu mới đã được gửi vào email của bạn',
+                    'notice' => 'Trong trường hợp không nhận được mail trong 2p xin vui lòng kiểm tra lại email đã nhập!',
+                    'code' => 200,
+                    'data' => [
+                        'email' => $email
+                    ],
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Không thể gửi email. Vui lòng thử lại sau',
+                    'code' => 500,
+                    'data' => null,
+                ], 500);
+            }
+    } 
+
 }
