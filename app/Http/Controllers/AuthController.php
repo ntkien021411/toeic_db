@@ -80,6 +80,50 @@ class AuthController extends Controller
             'meta' => null
         ], 200);
      }
+
+    public function checkAccount(Request $request)
+    {
+        $tokenString = $request->bearerToken();
+
+        if (!$tokenString) {
+            return response()->json(['message' => 'Vui lòng cung cấp Token'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Tìm token trong bảng tokens
+        $token = Token::where('token', $tokenString)->first();
+        if (!$token) {
+             return response()->json(['message' => 'Token không hợp lệ'], 401);
+         }
+ 
+         // 3. Kiểm tra thời gian hết hạn của token
+         if (!$token->expired_at || Carbon::parse($token->expired_at)->isPast()) {
+             return response()->json(['message' => 'Token đã hết hạn'], 401);
+         }
+
+        // Tìm user theo account_id từ token
+        $account = Account::where('id', $token->account_id)->first();
+
+        if (!$account) {
+            return response()->json(['message' => 'Không tìm thấy tài khoản người dùng'], Response::HTTP_NOT_FOUND);
+        }
+        // Tìm user theo account_id từ token
+        $user = User::where('account_id', $token->account_id)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Không tìm thấy người dùng'], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'id' => $user->id,
+            'fullName' => $user->full_name ?? '',
+            'username' => $account->username ?? '',
+            'email' => $account->email ?? '',
+            'role' => $user->role,
+            'isAdmin' => $user->role === 'ADMIN',
+            'isClient' => $user->role !== 'ADMIN',
+        ], 200);
+
+    }
  
 
      public function refresh(Request $request)

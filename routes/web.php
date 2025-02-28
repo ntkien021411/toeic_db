@@ -57,13 +57,14 @@ Route::prefix('api')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/', [AuthController::class, 'checkAccount']);
     });
     // ✅ Bảo vệ API bằng middleware 
     //Chỉ Admin dùng được
     Route::middleware(['checkAdmin'])->group(function () {
+        
         //Tài khoản
         Route::get('/accounts', [AdminController::class, 'index']); // Xem danh sách hoặc tìm kiếm tài khoản
-        Route::post('/accounts', [AdminController::class, 'store']); // Tạo tài khoản
         Route::put('/accounts/{id}', [AdminController::class, 'update']); // Cập nhật hoặc xóa mềm tài khoản
         
         //Giáo viên

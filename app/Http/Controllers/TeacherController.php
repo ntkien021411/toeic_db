@@ -83,6 +83,7 @@ class TeacherController extends Controller
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|unique:account,username',
             'password' => 'required|string|min:6',
+            'email' => 'required|string|unique:account,email',
             'first_name' => 'nullable|string|max:50',
             'full_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
@@ -94,6 +95,8 @@ class TeacherController extends Controller
         ], [
             'username.required' => 'Tên đăng nhập không được để trống.',
             'username.unique' => 'Tên đăng nhập đã tồn tại.',
+            'email.required' => 'Email không được để trống.',
+            'email.unique' => 'Email đã tồn tại.',
             'password.required' => 'Mật khẩu không được để trống.',
             'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
             'birth_date.date' => 'Ngày sinh không hợp lệ.',
@@ -116,6 +119,7 @@ class TeacherController extends Controller
 
         $account = Account::create([
             'username' => $request->username,
+            'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
 

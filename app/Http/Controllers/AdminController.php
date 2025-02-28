@@ -56,67 +56,6 @@ class AdminController extends Controller
             ],200);
     }
 
-    // Data test
-    // {
-    //     "username": "testuser123",
-    //     "password": "securePass123"
-    // }
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'username' => 'required|unique:account',
-            'password' => 'required|min:6',
-        ], [
-            'username.required' => 'Tên đăng nhập không được để trống.',
-            'username.unique' => 'Tên đăng nhập đã tồn tại.',
-            'password.required' => 'Mật khẩu không được để trống.',
-            'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Dữ liệu nhập vào không hợp lệ',
-                'code' => 400,
-                'data' => null,
-                'meta' => null,
-                'message_array' =>  $validator->errors()
-            ], 400);
-        }
-
-        DB::beginTransaction();
-        try {
-            // Tạo tài khoản
-            $account = Account::create([
-                'username' => $request->username,
-                'password' => Hash::make($request->password),
-                'active_status' => true,
-                'active_date' => now()
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Tạo tài khoản thành công!',
-                'code' => 201,
-                'data' => $account,
-                'meta' => null
-            ], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Có lỗi xảy ra, vui lòng thử lại.',
-                'code' => 500,
-                'data' => null,
-                'meta' => null,
-                'message_array' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // {
-    //     "email": "newemail@example.com",
-    //     "active_status": false
-    // }
     public function update(Request $request, $id)
     {
         $account = Account::findOrFail($id);
