@@ -15,6 +15,22 @@ class User extends Model
         'gender', 'phone', 'image_link', 'facebook_link', 'is_deleted', 'created_at', 'deleted_at'
     ];
     
+    public $timestamps = false; // Tự động cập nhật created_at và updated_at
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Cập nhật created_at & updated_at khi insert
+        static::creating(function ($model) {
+            $model->created_at = now();
+            $model->updated_at = now();
+        });
+
+        // Cập nhật updated_at khi update
+        static::updating(function ($model) {
+            $model->updated_at = now();
+        });
+    }
     protected $hidden = [
         'updated_at', // Ẩn mật khẩu khi query
         'created_at'

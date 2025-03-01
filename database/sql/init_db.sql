@@ -113,8 +113,12 @@ CREATE TABLE Exam_Result (
     user_id INT NOT NULL,
     exam_section_id INT NOT NULL,
     score INT CHECK (score >= 0),
-    correct_answers INT CHECK (correct_answers >= 0),
-    wrong_answers INT CHECK (wrong_answers >= 0),
+    correct_answers INT CHECK (correct_answers >= 0) DEFAULT 0,
+    wrong_answers INT CHECK (wrong_answers >= 0) DEFAULT 0,
+    correct_answers_listening INT CHECK (correct_answers_listening >= 0) DEFAULT 0,
+    wrong_answers_listening INT CHECK (wrong_answers_listening >= 0) DEFAULT 0,
+    correct_answers_reading INT CHECK (correct_answers_reading >= 0) DEFAULT 0,
+    wrong_answers_reading INT CHECK (wrong_answers_reading >= 0) DEFAULT 0,
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
@@ -202,20 +206,25 @@ VALUES ('C101', 'TOEIC Basic', '2024-01-10', '2024-06-10', (SELECT id FROM User 
        ('C105', 'TOEIC Reading Master', '2024-05-01', '2024-10-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher3')));
 
 -- Gán 3 sinh viên vào mỗi lớp
-INSERT INTO Class_User (class_id, user_id, role)
-SELECT (SELECT id FROM Class WHERE class_code = 'C101'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student1', 'student2', 'student3'));
+INSERT INTO Class_User (class_id, user_id)
+SELECT (SELECT id FROM Class WHERE class_code = 'C101'), id FROM User 
+WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student1', 'student2', 'student3'));
 
-INSERT INTO Class_User (class_id, user_id, role)
-SELECT (SELECT id FROM Class WHERE class_code = 'C102'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student4', 'student5', 'student6'));
+INSERT INTO Class_User (class_id, user_id)
+SELECT (SELECT id FROM Class WHERE class_code = 'C102'), id FROM User 
+WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student4', 'student5', 'student6'));
 
-INSERT INTO Class_User (class_id, user_id, role)
-SELECT (SELECT id FROM Class WHERE class_code = 'C103'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student7', 'student8', 'student9'));
+INSERT INTO Class_User (class_id, user_id)
+SELECT (SELECT id FROM Class WHERE class_code = 'C103'), id FROM User 
+WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student7', 'student8', 'student9'));
 
-INSERT INTO Class_User (class_id, user_id, role)
-SELECT (SELECT id FROM Class WHERE class_code = 'C104'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student10', 'student11', 'student12'));
+INSERT INTO Class_User (class_id, user_id)
+SELECT (SELECT id FROM Class WHERE class_code = 'C104'), id FROM User 
+WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student10', 'student11', 'student12'));
 
-INSERT INTO Class_User (class_id, user_id, role)
-SELECT (SELECT id FROM Class WHERE class_code = 'C105'), id, 'STUDENT' FROM User WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student13', 'student14', 'student15'));
+INSERT INTO Class_User (class_id, user_id)
+SELECT (SELECT id FROM Class WHERE class_code = 'C105'), id FROM User 
+WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student13', 'student14', 'student15'));
 
 
 -- 1. Thêm bài thi TOEIC (7 bài thi với part 1-7, và 1 bài thi full)
@@ -260,5 +269,4 @@ INSERT INTO Exam_Result (user_id, exam_section_id, score, correct_answers, wrong
 VALUES 
 (1, '2', 600, 145, 120),
 (1, '3', 600, 145, 120);
-
 

@@ -120,6 +120,9 @@ class TeacherController extends Controller
         $account = Account::create([
             'username' => $request->username,
             'email' => $request->email,
+            'active_date' => now(),
+            'active_status' => true,
+            'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
 

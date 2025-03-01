@@ -18,7 +18,22 @@ class Token extends Model
         'refresh_token'
     ];
 
-    public $timestamps = false; // Vì `created_at` đã có mặc định SQL
+    public $timestamps = false; // Tự động cập nhật created_at và updated_at
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Cập nhật created_at & updated_at khi insert
+        static::creating(function ($model) {
+            $model->created_at = now();
+            $model->updated_at = now();
+        });
+
+        // Cập nhật updated_at khi update
+        static::updating(function ($model) {
+            $model->updated_at = now();
+        });
+    }
 
     public function account()
     {

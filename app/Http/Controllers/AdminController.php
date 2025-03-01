@@ -105,10 +105,20 @@ class AdminController extends Controller
                 $data['active_status'] = false;
             } else {
                 // Nếu is_deleted = false, xóa deleted_at (khôi phục tài khoản)
-                $data['deleted_at'] = false;
+                $data['deleted_at'] = null;
             }
 
             $data['is_deleted'] = $isDeleted;
+        }
+
+         // Kiểm tra nếu active_status được truyền vào
+        if ($request->has('active_status')) {
+            $isActive = filter_var($request->input('active_status'), FILTER_VALIDATE_BOOLEAN);
+
+            if ($isActive) {
+                // Nếu active_status = true, đặt active_date = now()
+                $data['active_date'] = now();
+            }
         }
 
         // Cập nhật tài khoản
