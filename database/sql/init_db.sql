@@ -165,6 +165,17 @@ INSERT INTO Account (username, email, password, active_status) VALUES
 INSERT INTO User (account_id, role, first_name, last_name) VALUES
 ((SELECT id FROM Account WHERE username = 'admin'), 'ADMIN', 'Admin', 'User');
 
+-- Thêm 2 tài khoản mới
+INSERT INTO Account (username, email, password, active_status) VALUES
+('vu.letruong', 'vu.letruong@vti.com.vn', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
+('kien.nguyentrung7', 'kien.nguyentrung7@vti.com.vn', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE);
+
+-- Thêm thông tin User tương ứng với 2 tài khoản mới
+INSERT INTO User (account_id, role, first_name, last_name) VALUES
+((SELECT id FROM Account WHERE username = 'vu.letruong'), 'STUDENT', 'Le Truong', 'Vu'),
+((SELECT id FROM Account WHERE username = 'kien.nguyentrung7'), 'STUDENT', 'Nguyen Trung', 'Kien');
+
+
 -- Thêm 3 tài khoản Giáo viên
 INSERT INTO Account (username, email, password, active_status) VALUES
 ('teacher1', 'teacher1@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
