@@ -51,6 +51,7 @@ use App\Http\Controllers\ClassController;
 use App\Http\Controllers\DiplomaController;
 use App\Http\Controllers\ClassUserController;
 use App\Http\Controllers\ExamResultController;
+use App\Http\Controllers\ExamSectionController;
 
 Route::prefix('api')->group(function () {
     Route::prefix('auth')->group(function () {
@@ -102,6 +103,13 @@ Route::prefix('api')->group(function () {
         Route::get('/exam-results/search', [ExamResultController::class, 'searchExamResults']); //Tìm kiếm bài thi học viên đã làm
         Route::get('/exam-results/detail/{exam_id}', [ExamResultController::class, 'examDetail']); //Xem thông tin chi tiết bài thi
         //Route::get('/exam-results/analysis/{user_id}', [ExamResultController::class, 'analyzePerformance']); 
+
+        // Bài luyện thi toeic 
+        Route::get('/exam-sections', [ExamSectionController::class, 'index']); // Xem danh sách bài Luyện thi
+        Route::get('/exam-sections/detail/{exam_id}', [ExamSectionController::class, 'detail']); // Xem thông tin chi tiết
+        Route::post('/exam-sections', [ExamSectionController::class, 'store']); // Thêm bài Luyện thi
+        Route::put('/exam-sections/{exam_section_id}', [ExamSectionController::class, 'update']); // Chỉnh sửa và xóa mềm thông tin
+
         
     });
 });

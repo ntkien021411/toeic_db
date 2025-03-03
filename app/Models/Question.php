@@ -11,21 +11,23 @@ class Question extends Model
 
 
     protected $table = 'Question';
-
     protected $fillable = [
-        'user_id', 
-        'exam_section_id', 
-        'score', 
-        'correct_answers', 
-        'wrong_answers',
-        'submitted_at',
-        'updated_at',
+        'exam_section_id',
+        'image_url', 
+        'audio_url', 
+        'part_number', 
+        'question_text', 
+        'option_a',
+        'option_b',
+        'option_c',
+        'option_d',
+        'correct_answer',
         'deleted_at',
         'is_deleted'
     ];
 
     protected $casts = [
-        'submitted_at' => 'datetime',
+        'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
         'is_deleted' => 'boolean'

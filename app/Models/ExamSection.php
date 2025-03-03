@@ -55,4 +55,9 @@ class ExamSection extends Model
     {
         return $this->hasMany(ExamResult::class, 'exam_section_id');
     }
+    // Quan hệ 1-n với Question
+    public function questions()
+    {
+        return $this->hasMany(Question::class, 'exam_section_id', 'id')->where('is_deleted', false);
+    }
 }
