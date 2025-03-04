@@ -13,6 +13,7 @@ class Classes extends Model
 
     protected $fillable = [
         'class_code', 'class_name', 'start_date', 'end_date',
+        'start_time', 'end_time', 'days',
         'student_count', 'is_full', 'teacher_id', 'is_deleted'
     ];
 

@@ -12,6 +12,48 @@ use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
+    public function listAccount(Request $request)
+    {
+        $pageNumber = $request->input('pageNumber', 1);
+        $pageSize = $request->input('pageSize', 10);
+
+        // Truy vấn danh sách tài khoản
+        $query = Account::query()->where('is_deleted', false);
+
+        // Phân trang dữ liệu
+        $accounts = $query->paginate($pageSize, ['id', 'username', 'email','active_status', 'active_date', 'is_first'], 'page', $pageNumber);
+
+        // Chuyển đổi dữ liệu theo format mong muốn
+        $formattedAccounts = $accounts->map(function ($account) {
+            return [
+                'id' => $account->id,
+                'username' => $account->username,
+                'email' => $account->email,
+                'role' => $account->user->role,
+                'active_status' => (bool) $account->active_status,
+                'active_date' => (bool) $account->active_date,
+                'is_first' => isset($account->is_first) ? (bool) $account->is_first : null
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Lấy danh sách tài khoản thành công',
+            'code' => 200,
+            'data' => $formattedAccounts,
+            'meta' => $accounts->total() > 0 ? [
+                'total' => $accounts->total(),
+                'current_page' => $accounts->currentPage(),
+                'per_page' => $accounts->perPage(),
+                'last_page' => $accounts->lastPage(),
+                'next_page_url' => $accounts->nextPageUrl(),
+                'prev_page_url' => $accounts->previousPageUrl(),
+                'first_page_url' => $accounts->url(1),
+                'last_page_url' => $accounts->url($accounts->lastPage())
+            ] : null
+        ], 200);
+    }
+
+
     //GET /api/accounts?page=2
     // /api/accounts?username=student&page=1&email=student@gmail.com
     public function index(Request $request)

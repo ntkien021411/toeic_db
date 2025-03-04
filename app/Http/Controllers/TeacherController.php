@@ -12,6 +12,55 @@ use Illuminate\Support\Facades\Hash;
 
 class TeacherController extends Controller
 {
+    public function listTeacher(Request $request)
+    {
+        $pageNumber = $request->input('pageNumber', 1);
+        $pageSize = $request->input('pageSize', 10);
+    
+        // Truy vấn danh sách giáo viên, Eager Loading để lấy email và chứng chỉ
+        $query = User::query()
+            ->where('role', 'TEACHER')
+            ->where('is_deleted', false)
+            ->with([
+                'account:id,email', // Lấy email từ bảng account
+                'diplomas:id,user_id,certificate_name' // Lấy danh sách chứng chỉ từ bảng diploma
+            ]);
+    
+        // Phân trang dữ liệu
+        $teachers = $query->paginate($pageSize, ['id', 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
+    
+        // Chuyển đổi dữ liệu theo format mong muốn
+        $formattedTeachers = $teachers->map(function ($teacher) {
+            return [
+                'id' => $teacher->id,
+                'name' => "{$teacher->first_name} {$teacher->last_name}",
+                'dob' => $teacher->birth_date,
+                'gender' => $teacher->gender,
+                'phone' => $teacher->phone,
+                'email' => optional($teacher->account)->email, // Lấy email từ account (nếu có)
+                'address' => $teacher->address,
+                'certificate' => $teacher->diplomas->pluck('certificate_name')->toArray() // Lấy danh sách chứng chỉ
+            ];
+        });
+    
+        return response()->json([
+            'message' => 'Lấy danh sách giáo viên thành công',
+            'code' => 200,
+            'data' => $formattedTeachers,
+            'meta' => $teachers->total() > 0 ? [
+                'total' => $teachers->total(),
+                'current_page' => $teachers->currentPage(),
+                'per_page' => $teachers->perPage(),
+                'last_page' => $teachers->lastPage(),
+                'next_page_url' => $teachers->nextPageUrl(),
+                'prev_page_url' => $teachers->previousPageUrl(),
+                'first_page_url' => $teachers->url(1),
+                'last_page_url' => $teachers->url($teachers->lastPage())
+            ] : null
+        ], 200);
+    }
+
+
         // c.1. Tìm kiếm và xem danh sách giáo viên (có phân trang)
     public function index(Request $request)
         {

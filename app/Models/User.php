@@ -41,4 +41,16 @@ class User extends Model
      {
          return $this->belongsTo(Account::class, 'account_id');
      }
+
+     public function diplomas()
+    {
+        return $this->hasMany(Diploma::class, 'user_id');
+    }
+
+    // Một giáo viên có thể dạy nhiều lớp
+    public function classes()
+    {
+        return $this->hasMany(Classes::class, 'teacher_id'); 
+    }
+
 }

@@ -64,25 +64,35 @@ Route::prefix('api')->group(function () {
     // ✅ Bảo vệ API bằng middleware 
     //Chỉ Admin dùng được
     Route::middleware(['checkAdmin'])->group(function () {
+
+        // Xem danh sách giáo viên
+        Route::get('/teachers/list', [TeacherController::class, 'listTeacher']); 
+        // Xem danh sách học viên
+        Route::get('/students/list', [StudentController::class, 'listStudent']);
+        // Xem danh sách tài khoản
+        Route::get('/users/list', [AdminController::class, 'listAccount']);
+
+        //Thêm lớp học 
+        Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
+        //Danh sách lớp học 
+        Route::get('/classes/list', [ClassController::class, 'listClass']); 
         
         //Tài khoản
         Route::get('/accounts', [AdminController::class, 'index']); // Xem danh sách hoặc tìm kiếm tài khoản
         Route::put('/accounts/{id}', [AdminController::class, 'update']); // Cập nhật hoặc xóa mềm tài khoản
         
         //Giáo viên
-        Route::get('/teachers', [TeacherController::class, 'index']); // Tìm kiếm và xem danh sách giáo viên
+        // Route::get('/teachers', [TeacherController::class, 'index']); // Tìm kiếm và xem danh sách giáo viên
         Route::get('/teachers/{id}', [TeacherController::class, 'show']); // Xem chi tiết giáo viên
         Route::post('/teachers', [TeacherController::class, 'store']); // Thêm giáo viên
         Route::put('/teachers/{id}', [TeacherController::class, 'update']); // Chỉnh sửa hoặc xóa mềm giáo viên
 
         // Lớp học của giáo viên
-        Route::get('/class', [ClassController::class, 'index']);  // Xem danh sách tất cả lớp học hoặc theo giáo viên
-        Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
         Route::get('/class/{id}', [ClassController::class, 'show']); // Xem chi tiết lớp học
         Route::put('/class/{id}', [ClassController::class, 'update']); // Sửa và xóa mềm lớp học
 
         //Học viên
-        Route::get('/students', [StudentController::class, 'index']); // Tìm kiếm và xem danh sách học viên
+        // Route::get('/students', [StudentController::class, 'index']); // Tìm kiếm và xem danh sách học viên
         Route::get('/students/{id}', [StudentController::class, 'show']); // Xem chi tiết học viên
         Route::post('/students', [StudentController::class, 'store']); // Thêm học viên
         Route::put('/students/{id}', [StudentController::class, 'update']); // Chỉnh sửa hoặc xóa mềm học viên

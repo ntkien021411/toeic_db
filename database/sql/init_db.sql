@@ -41,10 +41,14 @@ CREATE TABLE User (
 -- 4. Bảng Class (Lớp học)
 CREATE TABLE Class (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    class_code VARCHAR(50) UNIQUE NOT NULL,
-    class_name VARCHAR(255) NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
+    class_code VARCHAR(50)  NOT NULL,
+    class_type ENUM('Tập sự', 'Toeic A', 'Toeic B') NOT NULL,
+    class_name VARCHAR(255)  NULL,
+    start_date DATE  NULL,
+    end_date DATE  NULL,
+    start_time TIME  NULL,
+    end_time TIME  NULL,
+    days VARCHAR(255) NULL, -- Lưu dạng "yy/mm/dddd,yy/mm/dddđ"
     student_count INT DEFAULT 0,
     is_full BOOLEAN NOT NULL DEFAULT FALSE,
     teacher_id INT NOT NULL,

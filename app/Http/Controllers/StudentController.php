@@ -12,6 +12,52 @@ use Illuminate\Support\Facades\Hash;
 
 class StudentController extends Controller
 {
+    public function listStudent(Request $request)
+    {
+        $pageNumber = $request->input('pageNumber', 1);
+        $pageSize = $request->input('pageSize', 10);
+
+        // Truy vấn danh sách học viên, sử dụng Eager Loading để lấy email từ bảng Account
+        $query = User::query()
+            ->where('role', 'STUDENT')
+            ->where('is_deleted', false)
+            ->with('account:id,email'); // Chỉ lấy email từ bảng account để tối ưu hóa
+
+        // Phân trang dữ liệu
+        $students = $query->paginate($pageSize, ['id', 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
+
+        // Chuyển đổi dữ liệu theo format mong muốn
+        $formattedStudents = $students->map(function ($student) {
+            return [
+                'id' => $student->id,
+                'name' => "{$student->first_name} {$student->last_name}",
+                'dob' => $student->birth_date,
+                'gender' => $student->gender,
+                'phone' => $student->phone,
+                'email' => optional($student->account)->email, // Lấy email từ account (nếu có)
+                'address' => $student->address
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Lấy danh sách học viên thành công',
+            'code' => 200,
+            'data' => $formattedStudents,
+            'meta' => $students->total() > 0 ? [
+                'total' => $students->total(),
+                'current_page' => $students->currentPage(),
+                'per_page' => $students->perPage(),
+                'last_page' => $students->lastPage(),
+                'next_page_url' => $students->nextPageUrl(),
+                'prev_page_url' => $students->previousPageUrl(),
+                'first_page_url' => $students->url(1),
+                'last_page_url' => $students->url($students->lastPage())
+            ] : null
+        ], 200);
+    }
+    
+
+
         // c.1. Tìm kiếm và xem danh sách học viên (có phân trang)
     public function index(Request $request)
         {
