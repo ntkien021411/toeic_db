@@ -92,7 +92,8 @@ class StudentController extends Controller
             'gender' => 'nullable|in:MALE,FEMALE,OTHER',
             'phone' => 'nullable|string|max:11|unique:user,phone',
             'image_link' => 'nullable|url',
-            'facebook_link' => 'nullable|url'
+            'facebook_link' => 'nullable|url',
+            'address' => 'nullable|string|max:255',
         ], [
             'username.required' => 'Tên đăng nhập không được để trống.',
             'username.unique' => 'Tên đăng nhập đã tồn tại.',
@@ -168,6 +169,7 @@ class StudentController extends Controller
             'phone' => 'nullable|string|max:11|unique:user,phone,' . $id,
             'image_link' => 'nullable|url',
             'facebook_link' => 'nullable|url',
+            'address' => 'nullable|string|max:255',
             'is_deleted' => 'nullable|boolean'
         ], [
             'first_name.max' => 'Họ không được dài hơn 50 ký tự.',

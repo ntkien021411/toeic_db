@@ -22,6 +22,7 @@ class Question extends Model
         'option_c',
         'option_d',
         'correct_answer',
+        'question_number',
         'deleted_at',
         'is_deleted'
     ];

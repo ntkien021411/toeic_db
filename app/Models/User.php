@@ -12,7 +12,7 @@ class User extends Model
 
     protected $fillable = [
       'id', 'account_id', 'role', 'first_name', 'last_name', 'full_name','birth_date',
-        'gender', 'phone', 'image_link', 'facebook_link', 'is_deleted', 'created_at', 'deleted_at'
+        'gender', 'phone', 'image_link', 'facebook_link','address', 'is_deleted', 'created_at', 'deleted_at'
     ];
     
     public $timestamps = false; // Tự động cập nhật created_at và updated_at

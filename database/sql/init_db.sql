@@ -28,6 +28,7 @@ CREATE TABLE User (
     phone VARCHAR(15) UNIQUE NULL,
     image_link VARCHAR(255) NULL,
     facebook_link VARCHAR(255) NULL,
+    address VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
@@ -91,6 +92,7 @@ CREATE TABLE Exam_Section (
 CREATE TABLE Question (
     id INT AUTO_INCREMENT PRIMARY KEY,
     exam_section_id INT NOT NULL,
+    question_number INT  NULL,
     image_url TEXT  NULL,
     audio_url TEXT  NULL,
     part_number ENUM('1', '2', '3', '4', '5', '6', '7') NOT NULL, 
