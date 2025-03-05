@@ -286,4 +286,3 @@ INSERT INTO Exam_Result (user_id, exam_section_id, score, correct_answers, wrong
 VALUES 
 (1, '2', 600, 145, 120),
 (1, '3', 600, 145, 120);
-
