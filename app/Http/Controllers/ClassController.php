@@ -12,56 +12,6 @@ use Illuminate\Support\Facades\Validator;
 
 class ClassController extends Controller
 {
-    // c.1. Tìm kiếm và xem danh sách class  (có phân trang)
-    // /class?teacher_id=2
-    public function index(Request $request)
-        {
-            $query = Classes::query()
-            ->where('is_deleted', false);
-
-        // Lọc theo các tham số từ request
-        if ($request->has('teacher_id')) {
-            $query->where('teacher_id', $request->teacher_id);
-        }
-        if ($request->has('class_code')) {
-            $query->where('class_code', 'like', "%{$request->class_code}%");
-        }
-        if ($request->has('class_name')) {
-            $query->where('class_name', 'like', "%{$request->class_name}%");
-        }
-        if ($request->has('start_date')) {
-            $query->whereDate('start_date', $request->start_date);
-        }
-        if ($request->has('end_date')) {
-            $query->whereDate('end_date', $request->end_date);
-        }
-        if ($request->has('is_full')) {
-            $query->where('is_full', $request->is_full);
-        }
-        if ($request->has('student_count')) {
-            $query->where('student_count', $request->student_count);
-        }
-
-        // Phân trang
-        $classes = $query->paginate($request->input('per_page', 10));
-
-        return response()->json([
-            'message' => 'Lấy danh sách lớp học thành công',
-            'code' => 200,
-            'data' => $classes->items(),
-            'meta' => $classes->total() > 0 ?[
-                'total' => $classes->total(),
-                'current_page' => $classes->currentPage(),
-                'per_page' => $classes->perPage(),
-                'last_page' => $classes->lastPage(),
-                'next_page_url' => $classes->nextPageUrl(),
-                'prev_page_url' => $classes->previousPageUrl(),
-                'first_page_url' => $classes->url(1),
-                'last_page_url' => $classes->url($classes->lastPage())
-            ] : null
-        ],200);
-    }
-
     public function show($id)
     {
         $class = Classes::where('id', $id)->where('is_deleted', false)->first();
@@ -238,16 +188,12 @@ class ClassController extends Controller
             'message' => 'Lấy danh sách lớp thành công',
             'code' => 200,
             'data' => $formattedClasses,
-            'meta' => [
+           'meta' => $classes->total() > 0 ? [
                 'total' => $classes->total(),
-                'current_page' => $classes->currentPage(),
-                'per_page' => $classes->perPage(),
-                'last_page' => $classes->lastPage(),
-                'next_page_url' => $classes->nextPageUrl(),
-                'prev_page_url' => $classes->previousPageUrl(),
-                'first_page_url' => $classes->url(1),
-                'last_page_url' => $classes->url($classes->lastPage())
-            ]
+                'pageCurrent' => $classes->currentPage(),
+                'pageSize' => $classes->perPage(),
+                'totalPage' => $classes->lastPage()
+            ] : null
         ], 200);
     }
 

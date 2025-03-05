@@ -45,62 +45,11 @@ class StudentController extends Controller
             'data' => $formattedStudents,
             'meta' => $students->total() > 0 ? [
                 'total' => $students->total(),
-                'current_page' => $students->currentPage(),
-                'per_page' => $students->perPage(),
-                'last_page' => $students->lastPage(),
-                'next_page_url' => $students->nextPageUrl(),
-                'prev_page_url' => $students->previousPageUrl(),
-                'first_page_url' => $students->url(1),
-                'last_page_url' => $students->url($students->lastPage())
+                'pageCurrent' => $students->currentPage(),
+                'pageSize' => $students->perPage(),
+                'totalPage' => $students->lastPage()
             ] : null
         ], 200);
-    }
-    
-
-
-        // c.1. Tìm kiếm và xem danh sách học viên (có phân trang)
-    public function index(Request $request)
-        {
-           $query = User::query()
-            ->where('role', 'STUDENT')
-            ->where('is_deleted', false); 
-
-            if ($request->has('first_name')) {
-                $query->where('first_name', 'like', "%{$request->first_name}%");
-            }
-            if ($request->has('last_name')) {
-                $query->where('last_name', 'like', "%{$request->last_name}%");
-            }
-            if ($request->has('phone')) {
-                $query->where('phone', 'like', "%{$request->phone}%");
-            }
-            if ($request->has('facebook_link')) {
-                $query->where('facebook_link', 'like', "%{$request->facebook_link}%");
-            }
-            if ($request->has('birth_date')) {
-                $query->where('birth_date', 'like', "%{$request->birth_date}%");
-            }
-            if ($request->has('gender')) {
-                $query->where('gender', $request->gender);
-            }
-
-            $students = $query->paginate($request->input('per_page', 10));
-
-            return response()->json([
-                'message' => 'Lấy danh sách học viên thành công',
-                'code' => 200,
-                'data' => $students->items(),
-                'meta' => $students->total() > 0 ? [
-                    'total' => $students->total(),
-                    'current_page' => $students->currentPage(),
-                    'per_page' => $students->perPage(),
-                    'last_page' => $students->lastPage(),
-                    'next_page_url' => $students->nextPageUrl(),
-                    'prev_page_url' => $students->previousPageUrl(),
-                    'first_page_url' => $students->url(1),
-                    'last_page_url' => $students->url($students->lastPage())
-                ] : null
-            ], 200);
     }
     
 
@@ -268,6 +217,86 @@ class StudentController extends Controller
     }
 
 
+    public function delete(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer'
+        ], [
+            'ids.required' => 'Danh sách ID là bắt buộc.',
+            'ids.array' => 'Danh sách ID phải là một mảng.',
+            'ids.min' => 'Phải có ít nhất một ID.',
+            'ids.*.integer' => 'ID phải là số nguyên.'
+        ]);
     
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Dữ liệu nhập vào không hợp lệ.',
+                'code' => 400,
+                'data' => null,
+                'meta' => null,
+                'message_array' => $validator->errors()
+            ], 400);
+        }
+    
+        try {
+            $now = now();
+            $requestedIds = $request->ids;
+    
+            // Lấy danh sách ID có tồn tại
+            $existingUsers = User::whereIn('id', $requestedIds)->get();
+            $existingIds = $existingUsers->pluck('id')->toArray();
+            $invalidIds = array_diff($requestedIds, $existingIds);
+    
+            // Lọc ra danh sách giáo viên có role TEACHER
+            $teachers = $existingUsers->where('role', 'STUDENT');
+    
+            if ($teachers->isEmpty()) {
+                return response()->json([
+                    'message' => 'Không tìm thấy học viên hợp lệ để xóa.',
+                    'code' => 400,
+                    'data' => [
+                        'invalid_ids' => $invalidIds
+                    ],
+                    'meta' => null
+                ], 400);
+            }
+    
+            // Lấy danh sách account_id từ bảng users để update bảng account
+            $accountIds = $teachers->pluck('account_id')->unique()->toArray();
+            $userIds = $teachers->pluck('id')->toArray();
+    
+            // Cập nhật bảng users
+            User::whereIn('id', $userIds)->update([
+                'is_deleted' => true,
+                'deleted_at' => $now
+            ]);
+    
+            // Cập nhật bảng account
+            Account::whereIn('id', $accountIds)->update([
+                'is_deleted' => true,
+                'deleted_at' => $now
+            ]);
+    
+            return response()->json([
+                'message' => 'Xóa học viên thành công.',
+                'code' => 200,
+                'data' => [
+                    'deleted_users' => $userIds,
+                    'updated_accounts' => $accountIds,
+                    'invalid_ids' => $invalidIds
+                ],
+                'meta' => null
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi trong quá trình xóa học viên.',
+                'code' => 500,
+                'data' => null,
+                'meta' => null,
+                'error_detail' => $e->getMessage()
+            ], 500);
+        }
+    }
 
 }

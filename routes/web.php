@@ -33,7 +33,7 @@ Route::prefix('api')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
-        Route::post('/logout', [AuthController::class, 'logout']);
+        // Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/', [AuthController::class, 'checkAccount']);
         Route::get('/forgot-password', [AuthController::class, 'forgotPassword']);
     });
@@ -41,60 +41,59 @@ Route::prefix('api')->group(function () {
     //Chỉ Admin dùng được
     Route::middleware(['checkAdmin'])->group(function () {
 
-        // Xem danh sách giáo viên
+        //TEACHER Xem danh sách giáo viên 
         Route::get('/teachers/list', [TeacherController::class, 'listTeacher']); 
-        // Xem danh sách học viên
+        Route::delete('/teachers/delete', [TeacherController::class, 'delete']); 
+        //STUDENT Xem danh sách học viên
         Route::get('/students/list', [StudentController::class, 'listStudent']);
-        // Xem danh sách tài khoản
-        Route::get('/users/list', [AdminController::class, 'listAccount']);
+        Route::delete('/students/delete', [StudentController::class, 'delete']); 
 
-        //Thêm lớp học 
+        //ACCOUNT Xem danh sách tài khoản
+        Route::get('/users/list', [AdminController::class, 'listAccount']);
+        Route::delete('/users/delete', [AdminController::class, 'delete']); 
+
+        //CLASS Thêm lớp học 
         Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
         //Danh sách lớp học 
         Route::get('/classes/list', [ClassController::class, 'listClass']); 
         
+
+
+
+        //Base Logic 
+
         //Tài khoản
-        Route::get('/accounts', [AdminController::class, 'index']); // Xem danh sách hoặc tìm kiếm tài khoản
-        Route::put('/accounts/{id}', [AdminController::class, 'update']); // Cập nhật hoặc xóa mềm tài khoản
-        
+        // Route::put('/accounts/{id}', [AdminController::class, 'update']); // Cập nhật hoặc xóa mềm tài khoản
         //Giáo viên
-        // Route::get('/teachers', [TeacherController::class, 'index']); // Tìm kiếm và xem danh sách giáo viên
-        Route::get('/teachers/{id}', [TeacherController::class, 'show']); // Xem chi tiết giáo viên
-        Route::post('/teachers', [TeacherController::class, 'store']); // Thêm giáo viên
-        Route::put('/teachers/{id}', [TeacherController::class, 'update']); // Chỉnh sửa hoặc xóa mềm giáo viên
-
+        // Route::get('/teachers/{id}', [TeacherController::class, 'show']); // Xem chi tiết giáo viên
+        // Route::post('/teachers', [TeacherController::class, 'store']); // Thêm giáo viên
+        // Route::put('/teachers/{id}', [TeacherController::class, 'update']); // Chỉnh sửa hoặc xóa mềm giáo viên
         // Lớp học của giáo viên
-        Route::get('/class/{id}', [ClassController::class, 'show']); // Xem chi tiết lớp học
-        Route::put('/class/{id}', [ClassController::class, 'update']); // Sửa và xóa mềm lớp học
-
+        // Route::get('/class/{id}', [ClassController::class, 'show']); // Xem chi tiết lớp học
+        // Route::put('/class/{id}', [ClassController::class, 'update']); // Sửa và xóa mềm lớp học
         //Học viên
-        // Route::get('/students', [StudentController::class, 'index']); // Tìm kiếm và xem danh sách học viên
-        Route::get('/students/{id}', [StudentController::class, 'show']); // Xem chi tiết học viên
-        Route::post('/students', [StudentController::class, 'store']); // Thêm học viên
-        Route::put('/students/{id}', [StudentController::class, 'update']); // Chỉnh sửa hoặc xóa mềm học viên
-
+        // Route::get('/students/{id}', [StudentController::class, 'show']); // Xem chi tiết học viên
+        // Route::post('/students', [StudentController::class, 'store']); // Thêm học viên
+        // Route::put('/students/{id}', [StudentController::class, 'update']); // Chỉnh sửa hoặc xóa mềm học viên
         //Thêm học viên vào lớp
-        Route::post('/classes/students', [ClassUserController::class, 'addStudentToClass']);//Thêm học sinh vào lớp học
+        // Route::post('/classes/students', [ClassUserController::class, 'addStudentToClass']);//Thêm học sinh vào lớp học
         //Xem lớp học của học viên
-        Route::get('/classes/students/{user_id}', [ClassUserController::class, 'getStudentClasses']);//Xem lớp học của học viên
-
+        // Route::get('/classes/students/{user_id}', [ClassUserController::class, 'getStudentClasses']);//Xem lớp học của học viên
         // Bằng cấp của giáo viên
-        Route::get('/diploma', [DiplomaController::class, 'index']);  // Xem danh sách tất cả bằng cấp hoặc của 1 giáo viên
-        Route::post('/diploma', [DiplomaController::class, 'store']); // Thêm bằng cấp
-        Route::put('/diploma/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
-        Route::get('/diploma/{id}', [DiplomaController::class, 'show']); // Xem chi tiết bằng cấp   
-
+        // Route::get('/diploma', [DiplomaController::class, 'index']);  // Xem danh sách tất cả bằng cấp hoặc của 1 giáo viên
+        // Route::post('/diploma', [DiplomaController::class, 'store']); // Thêm bằng cấp
+        // Route::put('/diploma/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
+        // Route::get('/diploma/{id}', [DiplomaController::class, 'show']); // Xem chi tiết bằng cấp   
         //Lịch sử làm bài thi của học viên 
-        Route::get('/exam-results/history/{user_id}', [ExamResultController::class, 'examHistory']); //Xem danh sách lịch sử bài thi của học viên
-        Route::get('/exam-results/search', [ExamResultController::class, 'searchExamResults']); //Tìm kiếm bài thi học viên đã làm
-        Route::get('/exam-results/detail/{exam_id}', [ExamResultController::class, 'examDetail']); //Xem thông tin chi tiết bài thi
+        // Route::get('/exam-results/history/{user_id}', [ExamResultController::class, 'examHistory']); //Xem danh sách lịch sử bài thi của học viên
+        // Route::get('/exam-results/search', [ExamResultController::class, 'searchExamResults']); //Tìm kiếm bài thi học viên đã làm
+        // Route::get('/exam-results/detail/{exam_id}', [ExamResultController::class, 'examDetail']); //Xem thông tin chi tiết bài thi
         //Route::get('/exam-results/analysis/{user_id}', [ExamResultController::class, 'analyzePerformance']); 
-
         // Bài luyện thi toeic 
-        Route::get('/exam-sections', [ExamSectionController::class, 'index']); // Xem danh sách bài Luyện thi
-        Route::get('/exam-sections/detail/{exam_id}', [ExamSectionController::class, 'detail']); // Xem thông tin chi tiết
-        Route::post('/exam-sections', [ExamSectionController::class, 'store']); // Thêm bài Luyện thi
-        Route::put('/exam-sections/{exam_section_id}', [ExamSectionController::class, 'update']); // Chỉnh sửa và xóa mềm thông tin
+        // Route::get('/exam-sections', [ExamSectionController::class, 'index']); // Xem danh sách bài Luyện thi
+        // Route::get('/exam-sections/detail/{exam_id}', [ExamSectionController::class, 'detail']); // Xem thông tin chi tiết
+        // Route::post('/exam-sections', [ExamSectionController::class, 'store']); // Thêm bài Luyện thi
+        // Route::put('/exam-sections/{exam_section_id}', [ExamSectionController::class, 'update']); // Chỉnh sửa và xóa mềm thông tin
 
         
     });

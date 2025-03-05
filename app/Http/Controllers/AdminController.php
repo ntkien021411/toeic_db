@@ -42,61 +42,13 @@ class AdminController extends Controller
             'data' => $formattedAccounts,
             'meta' => $accounts->total() > 0 ? [
                 'total' => $accounts->total(),
-                'current_page' => $accounts->currentPage(),
-                'per_page' => $accounts->perPage(),
-                'last_page' => $accounts->lastPage(),
-                'next_page_url' => $accounts->nextPageUrl(),
-                'prev_page_url' => $accounts->previousPageUrl(),
-                'first_page_url' => $accounts->url(1),
-                'last_page_url' => $accounts->url($accounts->lastPage())
+                'pageCurrent' => $accounts->currentPage(),
+                'pageSize' => $accounts->perPage(),
+                'totalPage' => $accounts->lastPage()
             ] : null
         ], 200);
     }
 
-
-    //GET /api/accounts?page=2
-    // /api/accounts?username=student&page=1&email=student@gmail.com
-    public function index(Request $request)
-    {
-        $query = Account::query() // Bỏ with('user') để không trả về user
-        ->where('is_deleted', false)
-        ->where(function ($q) {
-            $q->whereDoesntHave('user') // Nếu không có user nào liên kết
-              ->orWhereHas('user', function ($subQuery) {
-                  $subQuery->where('role', '!=', 'ADMIN'); // Hoặc user không phải ADMIN
-              });
-        })
-        ->select(['id', 'username', 'email', 'active_status', 'created_at']); // Chỉ lấy dữ liệu từ bảng account
-
-        // Lọc theo username nếu có
-        if ($request->has('username')) {
-            $query->where('username', 'like', '%' . $request->username . '%');
-        }
-
-        // Lọc theo email nếu có
-        if ($request->has('email')) {
-            $query->where('email', 'like', '%' . $request->email . '%');
-        }
-
-        // Chỉ chọn các trường cần thiết
-        $accounts = $query->paginate($request->input('per_page', 10)); // Mặc định lấy 10 record mỗi trang
-
-            return response()->json([
-                'message' => 'Lấy danh sách tài khoản thành công',
-                'code' => 200,
-                'data' => $accounts->items(),
-                'meta' => $accounts->total() > 0 ?[
-                    'total' => $accounts->total(),
-                    'current_page' => $accounts->currentPage(),
-                    'per_page' => $accounts->perPage(),
-                    'last_page' => $accounts->lastPage(),
-                    'next_page_url' => $accounts->nextPageUrl(),
-                    'prev_page_url' => $accounts->previousPageUrl(),
-                    'first_page_url' => $accounts->url(1),
-                    'last_page_url' => $accounts->url($accounts->lastPage())
-                ] : null
-            ],200);
-    }
 
     public function update(Request $request, $id)
     {
@@ -173,6 +125,105 @@ class AdminController extends Controller
             'meta' => null
         ], 200);
     }
+    public function delete(Request $request)
+        {
+            $validator = Validator::make($request->all(), [
+                'ids' => 'required|array|min:1',
+                'ids.*' => 'integer'
+            ], [
+                'ids.required' => 'Danh sách ID  là bắt buộc.',
+                'ids.array' => 'Danh sách ID  phải là một mảng.',
+                'ids.min' => 'Phải có ít nhất một ID .',
+                'ids.*.integer' => 'ID  phải là số nguyên.'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Dữ liệu nhập vào không hợp lệ.',
+                    'code' => 400,
+                    'data' => null,
+                    'meta' => null,
+                    'message_array' => $validator->errors()
+                ], 400);
+            }
+
+            try {
+                $now = now();
+                $requestedAccountIds = $request->ids;
+
+                // Lấy danh sách tài khoản hợp lệ
+                $existingAccounts = Account::whereIn('id', $requestedAccountIds)->get();
+                $validAccountIds = $existingAccounts->pluck('id')->toArray();
+                $invalidAccountIds = array_values(array_diff($requestedAccountIds, $validAccountIds));
+
+                if (empty($validAccountIds)) {
+                    return response()->json([
+                        'message' => 'Không tìm thấy tài khoản hợp lệ để xóa.',
+                        'code' => 400,
+                        'data' => [
+                            'invalid_account_ids' => $invalidAccountIds
+                        ],
+                        'meta' => null
+                    ], 400);
+                }
+
+                // Lấy danh sách user có account_id hợp lệ nhưng KHÔNG phải ADMIN
+                $users = User::whereIn('account_id', $validAccountIds)
+                    ->where('role', '!=', 'ADMIN')
+                    ->get();
+                
+                $userIds = $users->pluck('id')->toArray();
+                $validUserAccountIds = $users->pluck('account_id')->unique()->toArray();
+
+                // **Chỉ cập nhật tài khoản nếu tài khoản có user hợp lệ (không phải ADMIN)**
+                if (!empty($validUserAccountIds)) {
+                    Account::whereIn('id', $validUserAccountIds)->update([
+                        'is_deleted' => true,
+                        'deleted_at' => $now
+                    ]);
+                }
+
+                // Nếu không có user nào hợp lệ (chỉ có ADMIN hoặc không có user nào)
+                if (empty($userIds)) {
+                    return response()->json([
+                        'message' => 'Không có user nào cần xóa (chỉ có ADMIN hoặc không tồn tại).',
+                        'code' => 400,
+                        'data' => [
+                            'updated_accounts' => $validUserAccountIds,
+                            'invalid_account_ids' => $invalidAccountIds
+                        ],
+                        'meta' => null
+                    ], 400);
+                }
+
+                // Cập nhật bảng `users`
+                User::whereIn('id', $userIds)->update([
+                    'is_deleted' => true,
+                    'deleted_at' => $now
+                ]);
+
+                return response()->json([
+                    'message' => 'Xóa account thành công.',
+                    'code' => 200,
+                    'data' => [
+                        'deleted_users' => $userIds,
+                        'updated_accounts' => $validUserAccountIds,
+                        'invalid_account_ids' => $invalidAccountIds
+                    ],
+                    'meta' => null
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Lỗi trong quá trình xóa account.',
+                    'code' => 500,
+                    'data' => null,
+                    'meta' => null,
+                    'error_detail' => $e->getMessage()
+                ], 500);
+            }
+        }
+
+
 
 
 }
