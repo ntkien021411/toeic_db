@@ -5,6 +5,9 @@ docker exec -it laravel_app cp /var/www/.env.example /var/www/.env
 docker-compose exec app composer install
 docker exec -it laravel_app php artisan key:generate
 
+docker exec -it laravel_app sh -c 'echo "CLOUDINARY_URL=....." >> /var/www/.env'
+docker exec -it laravel_app sh -c 'echo "CLOUDINARY_SECURE_URL=true" >> /var/www/.env'
+
 //SERVER
 //Chạy trên server nếu lỗi 
 sudo chown -R ubuntu:ubuntu storage bootstrap/cache
