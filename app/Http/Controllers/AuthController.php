@@ -115,17 +115,21 @@ class AuthController extends Controller
             return response()->json(['message' => 'Không tìm thấy người dùng'], Response::HTTP_NOT_FOUND);
         }
 
-        return response()->json([
-            'id' => $user->id,
-            'fullName' => $user->full_name ?? '',
-            'username' => $account->username ?? '',
-            'email' => $account->email ?? '',
-            'role' => $user->role,
-            'isAdmin' => $user->role === 'ADMIN',
-            'isClient' => $user->role !== 'ADMIN',
-        ], 200);
-
-    }
+            return response()->json([
+                'message' => 'Lấy thông tin người dùng thành công ',
+                'code' => 200,
+                'data' => (object) [
+                    'id' => $user->id,
+                    'fullName' => $user->full_name ?? '',
+                    'username' => $account->username ?? '',
+                    'email' => $account->email ?? '',
+                    'role' => $user->role,
+                    'isAdmin' => $user->role === 'ADMIN',
+                    'isClient' => $user->role !== 'ADMIN'
+            ],
+                'meta' => null
+            ], 200);
+        }
  
 
      public function refresh(Request $request)
