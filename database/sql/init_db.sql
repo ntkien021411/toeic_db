@@ -42,7 +42,7 @@ CREATE TABLE User (
 CREATE TABLE Class (
     id INT AUTO_INCREMENT PRIMARY KEY,
     class_code VARCHAR(50)  NOT NULL,
-    class_type ENUM('Tập sự', 'Toeic A', 'Toeic B') NOT NULL,
+    class_type ENUM('Beginner', 'Toeic A', 'Toeic B') NOT NULL,
     class_name VARCHAR(255)  NULL,
     start_date DATE  NULL,
     end_date DATE  NULL,

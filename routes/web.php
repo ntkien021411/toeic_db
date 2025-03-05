@@ -3,46 +3,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\DB;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 
-Route::get('/check-db', function () {
-    try {
-        // Kết nối database
-        $pdo = DB::connection()->getPdo();
-
-        // Lấy tên database hiện tại
-        $databaseName = DB::connection()->getDatabaseName();
-
-        // Lấy danh sách tất cả các bảng
-        $tables = DB::select('SHOW TABLES');
-
-        // Định dạng danh sách bảng
-        $tableList = [];
-        foreach ($tables as $table) {
-            $tableList[] = array_values((array)$table)[0];
-        }
-
-        return response()->json([
-            'message' => 'Kết nối database thành công!',
-            'database' => $databaseName,
-            'tables' => $tableList,
-            'status' => true
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Không thể kết nối database!',
-            'error' => $e->getMessage(),
-            'status' => false
-        ], 500);
-    }
-});
 Route::get('/status', function () {
     return response()->json([
         'message' => 'Ứng dụng đã chạy thành công!12321',
         'status' => true
     ]);
 });
-
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TeacherController;
@@ -54,6 +23,13 @@ use App\Http\Controllers\ExamResultController;
 use App\Http\Controllers\ExamSectionController;
 
 Route::prefix('api')->group(function () {
+
+    Route::middleware(['checkToken'])->group(function () {
+        Route::post('/upload', function (Request $request) {
+            return response()->json($request->uploaded_urls);
+        })->middleware('upload.image');
+    });
+
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
