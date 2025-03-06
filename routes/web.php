@@ -28,6 +28,9 @@ Route::prefix('api')->group(function () {
         Route::post('/upload', function (Request $request) {
             return response()->json($request->uploaded_urls);
         })->middleware('upload.image');
+
+        //EXAMSECTION Bài luyện thi toeic 
+        Route::get('/tests-full/list', [ExamSectionController::class, 'listExam']); // Xem danh sách bài Luyện thi
     });
 
     Route::prefix('auth')->group(function () {
@@ -57,7 +60,6 @@ Route::prefix('api')->group(function () {
         //Danh sách lớp học 
         Route::get('/classes/list', [ClassController::class, 'listClass']); 
         
-
 
 
         //Base Logic 
@@ -90,7 +92,6 @@ Route::prefix('api')->group(function () {
         // Route::get('/exam-results/detail/{exam_id}', [ExamResultController::class, 'examDetail']); //Xem thông tin chi tiết bài thi
         //Route::get('/exam-results/analysis/{user_id}', [ExamResultController::class, 'analyzePerformance']); 
         // Bài luyện thi toeic 
-        // Route::get('/exam-sections', [ExamSectionController::class, 'index']); // Xem danh sách bài Luyện thi
         // Route::get('/exam-sections/detail/{exam_id}', [ExamSectionController::class, 'detail']); // Xem thông tin chi tiết
         // Route::post('/exam-sections', [ExamSectionController::class, 'store']); // Thêm bài Luyện thi
         // Route::put('/exam-sections/{exam_section_id}', [ExamSectionController::class, 'update']); // Chỉnh sửa và xóa mềm thông tin

@@ -86,6 +86,8 @@ CREATE TABLE Exam_Section (
     year INT  NULL CHECK (year > 0),
     duration INT  NULL CHECK (duration > 0),
     max_score INT  NULL CHECK (max_score > 0),
+    type VARCHAR(255)  NULL,
+    is_Free BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,

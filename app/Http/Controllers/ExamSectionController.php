@@ -12,48 +12,52 @@ use Illuminate\Support\Facades\Validator;
 
 class ExamSectionController extends Controller
 {
-    // Gộp Xem danh sách & Tìm kiếm bài Luyện thi
-    public function index(Request $request)
+    public function listExam(Request $request)
     {
-        $query = ExamSection::where('is_deleted', false);
+        $pageNumber = $request->input('pageNumber', 1);
+        $pageSize = $request->input('pageSize', 10);
 
-        // Áp dụng điều kiện tìm kiếm nếu có
-        // chi có code , name , section và year
-        if ($request->has('exam_code')) {
-            $query->where('exam_code', 'LIKE', "%{$request->exam_code}%");
-        }
-        if ($request->has('exam_name')) {
-            $query->where('exam_name', 'LIKE', "%{$request->exam_name}%");
-        }
-        if ($request->has('section_name')) {
-            $query->where('section_name', $request->section_name);
-        }
        
-        if ($request->has('year')) {
-            $query->where('year', $request->year);
-        }
-       
+        $query = ExamSection::query()
+            ->where('part_number', 'Full')
+            ->where('is_deleted', false); 
 
-        // Thực hiện phân trang, mỗi trang có 10 bản ghi
-        $examSections = $query->paginate(10);
+        // Phân trang dữ liệu
+        $exams= $query->paginate($pageSize, [
+            'id', 'exam_name', 
+            'duration',
+            'section_name',
+            'part_number',
+            'question_count',
+            'max_score', 'type', 'is_Free'], 'page', $pageNumber);
 
-        // Trả về response
+        // Chuyển đổi dữ liệu theo format mong muốn
+        $formattedExams = $exams->map(function ($exam) {
+            return [
+                'id' => $exam->id,
+                'title' => $exam->exam_name,
+                'duration' => $exam->duration,
+                'parts' => '7',
+                'questions' => $exam->question_count,
+                'maxScore' => $exam->max_score, 
+                'label' => $exam->type,
+                'isFree' => $exam->is_Free
+            ];
+        });
+
         return response()->json([
-            'message' => 'Lấy danh sách bài luyện thi thành công',
+            'message' => 'Lấy danh sách bài thi thành công',
             'code' => 200,
-            'data' => $examSections->items(),
-            'meta' => $examSections->total() > 0 ? [
-                'total' => $examSections->total(),
-                'current_page' => $examSections->currentPage(),
-                'per_page' => $examSections->perPage(),
-                'last_page' => $examSections->lastPage(),
-                'next_page_url' => $examSections->nextPageUrl(),
-                'prev_page_url' => $examSections->previousPageUrl(),
-                'first_page_url' => $examSections->url(1),
-                'last_page_url' => $examSections->url($examSections->lastPage())
+            'data' => $formattedExams,
+            'meta' => $exams->total() > 0 ? [
+                'total' => $exams->total(),
+                'pageCurrent' => $exams->currentPage(),
+                'pageSize' => $exams->perPage(),
+                'totalPage' => $exams->lastPage()
             ] : null
         ], 200);
     }
+    
 
     // Thông tin chi tiết
     public function detail($exam_id)
