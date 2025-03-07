@@ -21,6 +21,7 @@ use App\Http\Controllers\DiplomaController;
 use App\Http\Controllers\ClassUserController;
 use App\Http\Controllers\ExamResultController;
 use App\Http\Controllers\ExamSectionController;
+use App\Http\Controllers\ExcelController;
 
 Route::prefix('api')->group(function () {
 
@@ -28,6 +29,9 @@ Route::prefix('api')->group(function () {
         Route::post('/upload', function (Request $request) {
             return response()->json($request->uploaded_urls);
         })->middleware('upload.image');
+
+        //IMPORT EXCEL 
+        Route::post('/import-excel', [ExcelController::class, 'importExcel']);
 
         //EXAMSECTION Bài luyện thi toeic 
         Route::get('/tests-full/list', [ExamSectionController::class, 'listExam']); // Xem danh sách bài Luyện thi

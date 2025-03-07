@@ -12,3 +12,6 @@ docker exec -it laravel_app sh -c 'echo "CLOUDINARY_SECURE_URL=true" >> /var/www
 //Chạy trên server nếu lỗi 
 sudo chown -R ubuntu:ubuntu storage bootstrap/cache
 sudo chmod -R 777 storage bootstrap/cache
+
+//IMPORT EXCEL
+composer require maatwebsite/excel:^3.1.47 --with-all-dependencies
