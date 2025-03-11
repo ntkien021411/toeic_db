@@ -59,16 +59,16 @@ class ClassController extends Controller
             ], 400);
         }
     $validator = Validator::make($request->all(), [
-        'class_code'          => 'required|string|unique:class,class_code',
+        'class_code'          => 'required|string:Room,class_code',
         'class_type'          => 'required|string|in:Beginner,Toeic A,Toeic B',
         'start_date'          => 'required|date',
         'end_date'            => 'required|date|after_or_equal:start_date',
         'start_time'          => 'required|date_format:H:i',
         'end_time'            => 'required|date_format:H:i|after:start_time',
         'days'                => 'required|array|min:1',
-        'days.*'              => ['required', 'regex:/^\d{2}\/\d{2}\/\d{4}$/'], // Kiểm tra định dạng yy/mm/dddd
+        'days.*'              => ['required', 'regex:/^\d{2}-\d{2}-\d{4}$/'], // dd-mm-yyyy
         'number_of_students'  => 'required|integer|min:1',
-        'teacher'             => 'required|integer|exists:user,id'
+        'teacher'             => 'required|integer|exists:User,id'
     ], [
         'class_code.required'      => 'Mã lớp học là bắt buộc.',
         'class_code.unique'        => 'Mã lớp học đã tồn tại.',
@@ -110,7 +110,7 @@ class ClassController extends Controller
 
     try {
         $validatedDays = array_map(function ($day) {
-            return \Carbon\Carbon::createFromFormat('d/m/Y', $day)->format('d/m/Y');
+            return \Carbon\Carbon::createFromFormat('d-m-Y', $day)->format('d-m-Y');
         }, $request->days);
         
         $class = Classes::create([

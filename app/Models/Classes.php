@@ -9,10 +9,10 @@ class Classes extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'Class';
+    protected $table = 'Room';
 
     protected $fillable = [
-        'class_code', 'class_name', 'start_date', 'end_date',
+        'class_code', 'class_name', 'class_type','start_date', 'end_date',
         'start_time', 'end_time', 'days',
         'student_count', 'is_full', 'teacher_id', 'is_deleted'
     ];

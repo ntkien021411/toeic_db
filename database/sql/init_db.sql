@@ -39,7 +39,7 @@ CREATE TABLE User (
 
 
 -- 4. Bảng Class (Lớp học)
-CREATE TABLE Class (
+CREATE TABLE Room (
     id INT AUTO_INCREMENT PRIMARY KEY,
     class_code VARCHAR(50)  NOT NULL,
     class_type ENUM('Beginner', 'Toeic A', 'Toeic B') NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE Class_User (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    CONSTRAINT fk_class FOREIGN KEY (class_id) REFERENCES Class(id) ON DELETE CASCADE,
+    CONSTRAINT fk_class FOREIGN KEY (class_id) REFERENCES Room(id) ON DELETE CASCADE,
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
     UNIQUE (class_id, user_id)
 );
@@ -217,7 +217,7 @@ INSERT INTO User (account_id, role, first_name, last_name)
 SELECT id, 'STUDENT', CONCAT('Student', id), 'User' FROM Account WHERE username LIKE 'student%';
 
 -- Tạo 5 lớp học và gán giáo viên
-INSERT INTO Class (class_code, class_name, start_date, end_date, teacher_id) 
+INSERT INTO Room (class_code, class_name, start_date, end_date, teacher_id) 
 VALUES ('C101', 'TOEIC Basic', '2024-01-10', '2024-06-10', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1'))),
        ('C102', 'TOEIC Intermediate', '2024-02-15', '2024-07-15', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1'))),
        ('C103', 'TOEIC Advanced', '2024-03-01', '2024-08-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2'))),
@@ -226,23 +226,23 @@ VALUES ('C101', 'TOEIC Basic', '2024-01-10', '2024-06-10', (SELECT id FROM User 
 
 -- Gán 3 sinh viên vào mỗi lớp
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Class WHERE class_code = 'C101'), id FROM User 
+SELECT (SELECT id FROM Room WHERE class_code = 'C101'), id FROM User 
 WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student1', 'student2', 'student3'));
 
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Class WHERE class_code = 'C102'), id FROM User 
+SELECT (SELECT id FROM Room WHERE class_code = 'C102'), id FROM User 
 WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student4', 'student5', 'student6'));
 
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Class WHERE class_code = 'C103'), id FROM User 
+SELECT (SELECT id FROM Room WHERE class_code = 'C103'), id FROM User 
 WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student7', 'student8', 'student9'));
 
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Class WHERE class_code = 'C104'), id FROM User 
+SELECT (SELECT id FROM Room WHERE class_code = 'C104'), id FROM User 
 WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student10', 'student11', 'student12'));
 
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Class WHERE class_code = 'C105'), id FROM User 
+SELECT (SELECT id FROM Room WHERE class_code = 'C105'), id FROM User 
 WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student13', 'student14', 'student15'));
 
 
