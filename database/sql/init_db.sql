@@ -141,10 +141,10 @@ CREATE TABLE Diploma (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     certificate_name VARCHAR(255) NOT NULL,
-    score DECIMAL(5,2) NOT NULL,
-    level VARCHAR(500) NOT NULL,  -- Không dùng ENUM nữa
-    issued_by VARCHAR(255) NOT NULL,
-    issue_date DATE NOT NULL,
+    score DECIMAL(5,2)  NULL,
+    level VARCHAR(500)  NULL,  -- Không dùng ENUM nữa
+    issued_by VARCHAR(255)  NULL,
+    issue_date DATE  NULL,
     expiry_date DATE NULL,
     certificate_image TEXT NULL,  -- Cột mới để lưu URL ảnh chứng chỉ
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -14,7 +14,7 @@ class SendPasswordMail extends Mailable
     public $account;
     public $newPassword;
 
-    public function __construct(Account $account, $newPassword)
+    public function __construct($account, $newPassword)
     {
         $this->account = $account;
         $this->newPassword = $newPassword;
@@ -22,11 +22,11 @@ class SendPasswordMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Mật khẩu mới của bạn')
+        return $this->subject('Tài khoản và mật khẩu mới của bạn')
                     ->view('emails.send-password') // Phải trùng với tên file blade
                     ->with([
                         'username' => $this->account->username,
-                        'email' => $this->account->email, // Sửa lỗi $this->user->email
+                        'email' => $this->account->email, 
                         'password' => $this->newPassword, 
                     ]);
     }

@@ -61,9 +61,9 @@
         <!-- Ảnh banner của website Toeic -->
         <img src="https://your-website.com/images/toeic-banner.jpg" alt="Toeic App" class="banner">
 
-        <h2>Xin chào, {{ $username }}</h2>
-        <p>Bạn vừa yêu cầu khôi phục mật khẩu trên <strong>Toeic App</strong>.</p>
-        <p>Email của bạn: <strong>{{ $email }}</strong></p>
+        <h2>Xin chào, {{ $email }}</h2>
+        <p>Đây là tài khoản và mật khẩu mới của bạn trên <strong>Toeic App</strong>.</p>
+        <p>Tài khoản của bạn: <strong>{{ $username }}</strong></p>
         <p>Mật khẩu mới của bạn:</p>
         <p class="password">{{ $password }}</p>
 

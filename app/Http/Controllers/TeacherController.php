@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Account;
+use App\Models\Diploma;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SendPasswordMail;
 
 class TeacherController extends Controller
 {
@@ -55,57 +58,29 @@ class TeacherController extends Controller
             ] : null
         ], 200);
     }
-
-
-       // c.2 Xem thông tin chi tiết của giáo viên
-        public function show($id)
-        {
-            $teacher = User::where('role', 'TEACHER')->where('id', $id)->where('is_deleted', false)->first();
-            if (!$teacher) {
-                return response()->json([
-                    'message' => 'Không tìm thấy giáo viên.',
-                    'code' => 404,
-                    'data' => null,
-                    'meta' => null
-                ], 404);
-            }
-            return response()->json([
-                'message' => 'Thông tin giáo viên được lấy thành công.',
-                'code' => 200,
-                'data' => $teacher,
-                'meta' => null
-            ], 200);
-        }
-
-    // c.3. Thêm giáo viên
-    public function store(Request $request)
+    public function createUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|unique:account,username',
-            'password' => 'required|string|min:6',
-            'email' => 'required|string|unique:account,email',
-            'first_name' => 'nullable|string|max:50',
-            'full_name' => 'nullable|string|max:50',
-            'last_name' => 'nullable|string|max:50',
-            'birth_date' => 'nullable|date',
-            'gender' => 'nullable|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:11|unique:user,phone',
-            'image_link' => 'nullable|url',
-            'facebook_link' => 'nullable|url',
-            'address' => 'nullable|string|max:255'
+            'name' => 'required|string|max:50',
+            'dob' => 'required|date',
+            'gender' => 'required|in:MALE,FEMALE,OTHER',
+            'phoneNumber' => 'nullable|string|max:15|unique:User,phone',
+            'email' => 'nullable|email|max:100|unique:Account,email',
+            'address' => 'nullable|string|max:255',
+            'certificates' => 'nullable|array|min:1'
         ], [
-            'username.required' => 'Tên đăng nhập không được để trống.',
-            'username.unique' => 'Tên đăng nhập đã tồn tại.',
-            'email.required' => 'Email không được để trống.',
-            'email.unique' => 'Email đã tồn tại.',
-            'password.required' => 'Mật khẩu không được để trống.',
-            'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
-            'birth_date.date' => 'Ngày sinh không hợp lệ.',
+            'name.required' => 'Tên không được để trống.',
+            'dob.required' => 'Ngày sinh không được để trống.',
+            'dob.date' => 'Ngày sinh không hợp lệ.',
+            'gender.required' => 'Giới tính không được để trống.',
             'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
-            'phone.unique' => 'Số điện thoại đã tồn tại.',
-            'phone.max' => 'Số điện thoại không được vượt quá 11 ký tự.',
-            'image_link.url' => 'Liên kết ảnh không hợp lệ.',
-            'facebook_link.url' => 'Liên kết Facebook không hợp lệ.',
+            'phoneNumber.unique' => 'Số điện thoại đã tồn tại.',
+            'phoneNumber.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
+            'email.email' => 'Email không hợp lệ.',
+            'email.unique' => 'Email đã tồn tại.',
+            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
+            'certificates.array' => 'Danh sách chứng chỉ phải là một mảng.',
+            'certificates.min' => 'Giáo viên phải có ít nhất một chứng chỉ.'
         ]);
 
         if ($validator->fails()) {
@@ -118,29 +93,105 @@ class TeacherController extends Controller
             ], 400);
         }
 
-        $account = Account::create([
-            'username' => $request->username,
-            'email' => $request->email,
-            'active_date' => now(),
-            'active_status' => true,
-            'email' => $request->email,
-            'password' => Hash::make($request->password)
-        ]);
+        try {
+            DB::beginTransaction();
 
-        $teacher = User::create(array_merge(
-            $request->only(['first_name', 'last_name','full_name', 'birth_date', 'gender', 'phone', 'image_link', 'facebook_link']),
-            ['account_id' => $account->id, 'role' => 'TEACHER', 'is_deleted' => false]
-        ));
+           // Kiểm tra xem email đã tồn tại chưa
+           if (!empty($request->email) && Account::where('email', $request->email)->exists()) {
+            return response()->json([
+                'message' => 'Email đã tồn tại.',
+                'code' => 400
+            ], 400);
+        }
 
-        return response()->json([
-            'message' => 'Giáo viên đã được thêm thành công.',
-            'code' => 201,
-            'data' => $teacher,
-            'meta' => null
-        ], 201);
+        // Kiểm tra xem số điện thoại đã tồn tại chưa
+        if (!empty($request->phone) && User::where('phone', $request->phone)->exists()) {
+            return response()->json([
+                'message' => 'Số điện thoại đã tồn tại.',
+                'code' => 400
+            ], 400);
+        }
+          // Tạo mật khẩu ngẫu nhiên
+          $password = Hash::make(Str::random(12));
+
+           // Tạo username từ email (lấy phần trước @)
+           $baseUsername = explode('@', $request->email)[0];
+           $username = $baseUsername . Str::random(3);
+           $counter = 1;
+   
+           // Kiểm tra xem username đã tồn tại chưa
+           while (Account::where('username', $username)->exists()) {
+               $username = $baseUsername . $counter;
+               $counter++;
+           }
+                // Tạo tài khoản mới
+             $password = Str::random(12);
+             $hashedPassword = Hash::make($password);
+            
+
+            // Tạo tài khoản giáo viên mới
+            $account = Account::create([
+                'username' => $username,
+                'email' => $request->email,
+                'password' => $hashedPassword,
+                'active_status' => false,
+                'is_first' => true,
+                'active_date' => now(),
+            ]);
+             // Xử lý danh sách chứng chỉ (loại bỏ khoảng trắng)
+            $certificates = array_map(fn($cert) => preg_replace('/\s+/', '', trim($cert)), $request->certificates ?? []);
+
+            $teacher = User::create([
+                'account_id' => $account->id,
+                'full_name' => $request->name,
+                'birth_date' => $request->dob,
+                'gender' => $request->gender,
+                'phone' => $request->phoneNumber,
+                'address' => $request->address,
+                'role' => 'TEACHER',
+                'is_deleted' => false
+            ]);
+
+             // Tạo các chứng chỉ cho giáo viên
+             foreach ($request->certificates as $certificate) {
+                Diploma::create([
+                    'user_id' => $teacher->id,
+                    'certificate_name' => trim($certificate)
+                ]);
+            }
+
+            DB::commit();
+
+            // Gửi email sau khi commit để tránh rollback không cần thiết
+                // Gửi email chứa tài khoản mật khẩu mới (Dùng queue để gửi không bị chậm)
+                try {
+                    Mail::to($account->email)->queue(new SendPasswordMail($account, $password));
+
+                    return response()->json([
+                        'message' => 'Giáo viên đã được thêm thành công.',
+                        'notice' => 'Tài khoản và mật khẩu mới đã được gửi vào email của bạn.Trong trường hợp không nhận được mail trong 2p xin vui lòng kiểm tra lại email đã nhập!',
+                        'code' => 200,
+                        'data' => $teacher,
+                        'meta' => null
+                    ], 200);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'message' => 'Có quá trình lỗi trong lúc gửi. Vui lòng thử lại sau',
+                        'code' => 500,
+                        'data' => null,
+                    ], 500);
+                }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Đã xảy ra lỗi khi thêm giáo viên.',
+                'code' => 500,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    
     }
-
-
+ 
     // c.4. Chỉnh sửa thông tin giáo viên
     public function update(Request $request, $id)
     {

@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SendPasswordMail;
+use App\Mail\ResetPasswordMail;
 use Illuminate\Support\Str;
 use App\Models\Account;
 use App\Models\Token;
@@ -287,26 +287,34 @@ class AuthController extends Controller
             $user = User::where('account_id', $account->id)->first();
             if ($user->role === 'ADMIN') {
                 return response()->json([
-                    'message' => 'Tài không ADMIN không sử dụng được chức năng này ',
+                    'message' => 'Chức năng không khả dụng cho tài khoản ADMIN',
                     'code' => 404,
                     'data' => null,
                 ], 404);
             }
 
-
-            // Tạo mật khẩu mới ngẫu nhiên
-            $newPassword = Str::random(10);
-
-            // Cập nhật mật khẩu mới vào database (đã hash)
-            $account->password = Hash::make($newPassword);
-            $account->save();
+              // 4. Tạo Access Token & Refresh Token
+                $accessToken = Str::random(60); // Token ngẫu nhiên
+                $refreshToken = Str::random(60); // Token làm mới
+                $expiredAt = Carbon::now()->addMinutes(30); // Token hết hạn sau 2 phút
+        
+                // 5. Lưu token vào database
+                Token::updateOrCreate(
+                    ['account_id' => $account->id],
+                    [
+                        'token' => $accessToken,
+                        'refresh_token' => $refreshToken,
+                        'expired_at' => $expiredAt
+                    ]
+                );
 
             // Gửi email chứa mật khẩu mới (Dùng queue để gửi không bị chậm)
             try {
-                Mail::to($account->email)->queue(new SendPasswordMail($account, $newPassword));
+                $resetLink = url("/api/password/reset?email={$request->email}&token={$accessToken}");
+                Mail::to($account->email)->send(new ResetPasswordMail($resetLink));
 
                 return response()->json([
-                    'message' => 'Mật khẩu mới đã được gửi vào email của bạn',
+                    'message' => 'Chúng tôi đã gửi email khôi phục mật khẩu!',
                     'notice' => 'Trong trường hợp không nhận được mail trong 2p xin vui lòng kiểm tra lại email đã nhập!',
                     'code' => 200,
                     'data' => [
@@ -321,5 +329,53 @@ class AuthController extends Controller
                 ], 500);
             }
     } 
+
+    public function showResetPasswordForm(Request $request)
+        {
+            $email = $request->query('email');
+            $token = $request->query('token');
+            return view('auth.reset_password', ['email' => $email, 'token' => $token]);
+        }
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:Account,email',
+            'token' => 'required',
+            'old_password' => 'required',
+            'new_password' => 'required|min:5|confirmed'
+        ]);
+
+         // Kiểm tra token
+    $token = Token::where('token', $request->token)->first();
+    if (!$token) {
+        return back()->with('error', 'Token không hợp lệ.');
+    }
+
+    // Kiểm tra token hết hạn
+    if (!$token->expired_at || Carbon::parse($token->expired_at)->isPast()) {
+        return back()->with('error', 'Token đã hết hạn.');
+    }
+
+    // Lấy tài khoản theo email
+    $account = Account::where('email', $request->email)->first();
+    if (!$account) {
+        return back()->with('error', 'Không tìm thấy tài khoản.');
+    }
+
+    // Kiểm tra mật khẩu cũ
+    if (!Hash::check($request->old_password, $account->password)) {
+        return back()->with('error', 'Mật khẩu cũ không chính xác.');
+    }
+
+    // Cập nhật mật khẩu mới
+    $account->update(['password' => Hash::make($request->new_password)]);
+
+    // Xóa token sau khi sử dụng
+    $token->delete();
+
+    return redirect('http://localhost:5173/auth/login')->with('success', 'Mật khẩu đã được đặt lại thành công!');
+
+    }
+
 
 }
