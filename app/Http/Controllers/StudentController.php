@@ -115,7 +115,7 @@ class StudentController extends Controller
                  $counter++;
              } 
              // Tạo tài khoản mới
-             $password = Str::random(12);
+             $password = Str::random(8);
              $hashedPassword = Hash::make($password);
             
             // Create Account
@@ -143,32 +143,29 @@ class StudentController extends Controller
             DB::commit();
             // Gửi email sau khi commit để tránh rollback không cần thiết
                 // Gửi email chứa tài khoản mật khẩu mới (Dùng queue để gửi không bị chậm)
-                try {
+                // try {
                     Mail::to($account->email)->queue(new SendPasswordMail($account, $password));
 
                     return response()->json([
                         'message' => 'Tài khoản và mật khẩu mới đã được gửi vào email của bạn',
                         'notice' => 'Trong trường hợp không nhận được mail trong 2p xin vui lòng kiểm tra lại email đã nhập!',
-                        'code' => 200,
-                        'data' => [
-                            'email' => $email
-                        ],
+                        'code' => 200
                     ], 200);
-                } catch (\Exception $e) {
-                    return response()->json([
-                        'message' => 'Không thể gửi email. Vui lòng thử lại sau',
-                        'code' => 500,
-                        'data' => null,
-                    ], 500);
-                }
+                // } catch (\Exception $e) {
+                //     return response()->json([
+                //         'message' => 'Không thể gửi email. Vui lòng thử lại sau',
+                //         'code' => 500,
+                //         'data' => null,
+                //     ], 500);
+                // }
 
 
-            return response()->json([
-                'message' => 'Học sinh đã được tạo thành công.',
-                'code' => 201,
-                'data' => $user,
-                'meta' => null
-            ], 201);
+            // return response()->json([
+            //     'message' => 'Học sinh đã được tạo thành công.',
+            //     'code' => 201,
+            //     'data' => $user,
+            //     'meta' => null
+            // ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -257,6 +254,107 @@ class StudentController extends Controller
                 'data' => null,
                 'meta' => null,
                 'error_detail' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function editUser(Request $request,$id )
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:50',
+            'dob' => 'required|date',
+            'gender' => 'required|in:MALE,FEMALE,OTHER',
+            'phone' => 'nullable|string|max:15|unique:User,phone',
+            'email' => 'nullable|email|max:100|unique:Account,email',
+            'address' => 'nullable|string|max:255'
+        ], [
+            'name.required' => 'Tên không được để trống.',
+            'dob.required' => 'Ngày sinh không được để trống.',
+            'dob.date' => 'Ngày sinh không hợp lệ.',
+            'gender.required' => 'Giới tính không được để trống.',
+            'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
+            'phone.unique' => 'Số điện thoại đã tồn tại.',
+            'phone.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
+            'email.email' => 'Email không hợp lệ.',
+            'email.unique' => 'Email đã tồn tại.',
+            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => 400,
+                'data' => null,
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+             // Tìm User với điều kiện is_deleted = false
+            $user = User::where('id', $id)->where('is_deleted', false)->first();
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Không tìm thấy người dùng hoặc người dùng đã bị xóa.',
+                    'code' => 404
+                ], 404);
+            }
+              // Kiểm tra nếu role không phải STUDENT
+            if ($user->role !== 'STUDENT') {
+                return response()->json([
+                    'message' => 'Người dùng không có quyền cập nhật thông tin.',
+                    'code' => 403
+                ], 403);
+            }
+
+            
+             // Kiểm tra email đã tồn tại chưa (trừ user hiện tại)
+            if (!empty($request->email) && Account::where('email', $request->email)->where('id', '!=', $user->account_id)->exists()) {
+                return response()->json([
+                    'message' => 'Email đã tồn tại.',
+                    'code' => 400
+                ], 400);
+            }
+
+            // Kiểm tra số điện thoại đã tồn tại chưa (trừ user hiện tại)
+            if (!empty($request->phone) && User::where('phone', $request->phone)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'message' => 'Số điện thoại đã tồn tại.',
+                    'code' => 400
+                ], 400);
+            }
+
+            // Cập nhật User
+            $user->update([
+                'full_name' => $request->name,
+                'birth_date' => $request->dob,
+                'gender' => $request->gender,
+                'phone' => $request->phone,
+                'address' => $request->address
+            ]);
+
+            // Tìm Account dựa vào account_id từ bảng User
+            $account = Account::find($user->account_id);
+            if ($account && !empty($request->email)) {
+                $account->update([
+                    'email' => $request->email
+                ]);
+            }
+            
+            DB::commit();
+            return response()->json([
+                'message' => 'Cập nhật thông tin người dùng thành công.',
+                'data' => null,
+                'code' => 200
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Đã xảy ra lỗi khi tạo học sinh.',
+                'code' => 500,
+                'error' => $e->getMessage()
             ], 500);
         }
     }

@@ -310,7 +310,7 @@ class AuthController extends Controller
 
             // Gửi email chứa mật khẩu mới (Dùng queue để gửi không bị chậm)
             try {
-                $resetLink = url("/api/password/reset?email={$request->email}&token={$accessToken}");
+                $resetLink = url("http://localhost:5173/auth/reset-password?username={$account->username}&email={$request->email}&token={$accessToken}");
                 Mail::to($account->email)->send(new ResetPasswordMail($resetLink));
 
                 return response()->json([
@@ -329,53 +329,66 @@ class AuthController extends Controller
                 ], 500);
             }
     } 
-
-    public function showResetPasswordForm(Request $request)
-        {
-            $email = $request->query('email');
-            $token = $request->query('token');
-            return view('auth.reset_password', ['email' => $email, 'token' => $token]);
-        }
     public function resetPassword(Request $request)
     {
-        $request->validate([
+          // Kiểm tra dữ liệu request
+        $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:Account,email',
-            'token' => 'required',
-            'old_password' => 'required',
-            'new_password' => 'required|min:5|confirmed'
+            'token' => 'required|string',
+            'new_password' => 'required|min:5'
+        ], [
+            'email.required' => 'Vui lòng nhập email.',
+            'email.email' => 'Email không hợp lệ.',
+            'email.exists' => 'Email này không tồn tại trong hệ thống.',
+            'token.required' => 'Token là bắt buộc.',
+            'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
+            'new_password.min' => 'Mật khẩu phải có ít nhất 5 ký tự.',
         ]);
 
-         // Kiểm tra token
-    $token = Token::where('token', $request->token)->first();
-    if (!$token) {
-        return back()->with('error', 'Token không hợp lệ.');
+        // Nếu validate thất bại, trả về lỗi
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Dữ liệu nhập vào không hợp lệ.',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        // Kiểm tra token có hợp lệ không
+        $token = Token::where('token', $request->token)->first();
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token không hợp lệ hoặc đã hết hạn.',
+                'code' => 400,
+                'data' => null
+            ], 400);
+        }
+
+
+        // Lấy tài khoản theo email
+        $account = Account::where('email', $request->email)->first();
+        if (!$account) {
+            return response()->json([
+                'message' => 'Không tìm thấy tài khoản.',
+                'code' => 404,
+                'data' => null
+            ], 404);
+        }
+
+        // Cập nhật mật khẩu mới
+        $account->update(['password' => Hash::make($request->new_password)]);
+
+        // Xóa token sau khi sử dụng
+        $token->delete();
+
+        return response()->json([
+            'message' => 'Mật khẩu đã được đặt lại thành công!',
+            'code' => 200,
+            'data' => [
+                'email' => $account->email
+            ]
+        ], 200);
     }
 
-    // Kiểm tra token hết hạn
-    if (!$token->expired_at || Carbon::parse($token->expired_at)->isPast()) {
-        return back()->with('error', 'Token đã hết hạn.');
-    }
-
-    // Lấy tài khoản theo email
-    $account = Account::where('email', $request->email)->first();
-    if (!$account) {
-        return back()->with('error', 'Không tìm thấy tài khoản.');
-    }
-
-    // Kiểm tra mật khẩu cũ
-    if (!Hash::check($request->old_password, $account->password)) {
-        return back()->with('error', 'Mật khẩu cũ không chính xác.');
-    }
-
-    // Cập nhật mật khẩu mới
-    $account->update(['password' => Hash::make($request->new_password)]);
-
-    // Xóa token sau khi sử dụng
-    $token->delete();
-
-    return redirect('http://localhost:5173/auth/login')->with('success', 'Mật khẩu đã được đặt lại thành công!');
-
-    }
-
-
+   
 }

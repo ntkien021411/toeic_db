@@ -37,14 +37,14 @@ Route::prefix('api')->group(function () {
         Route::get('/tests-full/list', [ExamSectionController::class, 'listExam']); // Xem danh sách bài Luyện thi
     });
 
-    Route::get('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::get('/password/reset', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
-    Route::post('/password/reset', [AuthController::class, 'resetPassword']);
+   
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         // Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/', [AuthController::class, 'checkAccount']);
+        Route::get('/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     });
     // ✅ Bảo vệ API bằng middleware 
     //Chỉ Admin dùng được
@@ -53,10 +53,12 @@ Route::prefix('api')->group(function () {
         //TEACHER Xem danh sách giáo viên 
         Route::get('/teachers/list', [TeacherController::class, 'listTeacher']); 
         Route::post('/teachers/add-teacher', [TeacherController::class, 'createUser']); // Thêm giáo viên
+        Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'editUser']); // Thêm giáo viên
         Route::delete('/teachers/delete', [TeacherController::class, 'delete']); 
         //STUDENT Xem danh sách học viên
         Route::get('/students/list', [StudentController::class, 'listStudent']);
-         Route::post('/students/add-student', [StudentController::class, 'createUser']); // Thêm học viên
+        Route::post('/students/add-student', [StudentController::class, 'createUser']); // Thêm học viên
+        Route::put('/students/edit-student/{id}', [StudentController::class, 'editUser']); // Thêm học viên
         Route::delete('/students/delete', [StudentController::class, 'delete']); 
 
         //ACCOUNT Xem danh sách tài khoản
