@@ -64,7 +64,7 @@ class TeacherController extends Controller
             'name' => 'required|string|max:50',
             'dob' => 'required|date',
             'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phoneNumber' => 'nullable|string|max:15|unique:User,phone',
+            'phoneNumber' => 'nullable|string|max:11|unique:User,phone',
             'email' => 'nullable|email|max:100|unique:Account,email',
             'address' => 'nullable|string|max:255',
             'certificates' => 'nullable|array|min:1'
@@ -191,85 +191,7 @@ class TeacherController extends Controller
         }
     
     }
- 
-    // c.4. Chỉnh sửa thông tin giáo viên
-    public function update(Request $request, $id)
-    {
-        // Kiểm tra giáo viên có tồn tại và có role là TEACHER không
-            $teacher = User::where('id', $id)
-            ->where('role', 'TEACHER')
-            ->where('is_deleted', false)
-            ->first();
 
-        if (!$teacher) {
-            return response()->json([
-                'message' => 'Giáo viên không tồn tại hoặc đã bị xóa.',
-                'code' => 404,
-                'data' => $id,
-                'meta' => null
-            ], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'first_name' => 'nullable|string|max:50',
-            'last_name' => 'nullable|string|max:50',
-            'birth_date' => 'nullable|date',
-            'full_name' => 'nullable|string|max:50',
-            'gender' => 'nullable|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:11|unique:user,phone,' . $id,
-            'image_link' => 'nullable|url',
-            'facebook_link' => 'nullable|url',
-            'address' => 'nullable|string|max:255',
-            'is_deleted' => 'nullable|boolean'
-        ], [
-            'first_name.max' => 'Họ không được dài hơn 50 ký tự.',
-            'last_name.max' => 'Tên không được dài hơn 50 ký tự.',
-            'birth_date.date' => 'Ngày sinh không hợp lệ.',
-            'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
-            'phone.unique' => 'Số điện thoại đã tồn tại.',
-            'phone.max' => 'Số điện thoại không được vượt quá 11 ký tự.',
-            'image_link.url' => 'Liên kết ảnh không hợp lệ.',
-            'facebook_link.url' => 'Liên kết Facebook không hợp lệ.',
-            'is_deleted.boolean' => 'Trạng thái xóa phải là true hoặc false.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Dữ liệu nhập vào không hợp lệ',
-                'code' => 400,
-                'data' => null,
-                'meta' => null,
-                'message_array' =>  $validator->errors()
-            ], 400);
-        }
-
-        // Nếu yêu cầu xóa giáo viên (soft delete)
-        if ($request->has('is_deleted') && $request->is_deleted == true) {
-            $teacher->update([
-                'deleted_at' => now(),
-                'is_deleted' => true
-            ]);
-
-            return response()->json([
-                'message' => 'Giáo viên đã bị xóa mềm thành công.',
-                'code' => 200,
-                'data' => $teacher,
-                'meta' => null
-            ], 200);
-        }
-        
-        // Cập nhật thông tin giáo viên
-        $teacher->update($request->only([
-            'first_name', 'last_name', 'birth_date', 'full_name', 'gender', 'phone', 'image_link', 'facebook_link'
-        ]));
-
-        return response()->json([
-            'message' => 'Thông tin giáo viên đã được cập nhật.',
-            'code' => 200,
-            'data' => $teacher,
-            'meta' => null
-        ], 200);
-    }
 
     public function delete(Request $request)
     {
@@ -359,8 +281,8 @@ class TeacherController extends Controller
             'name' => 'required|string|max:50',
             'dob' => 'required|date',
             'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:15|unique:User,phone',
-            'email' => 'nullable|email|max:100|unique:Account,email',
+            'phone' => 'nullable|string|max:11',
+            'email' => 'nullable|email|max:100',
             'address' => 'nullable|string|max:255'
         ], [
             'name.required' => 'Tên không được để trống.',

@@ -59,7 +59,7 @@ class StudentController extends Controller
             'name' => 'required|string|max:50',
             'dob' => 'required|date',
             'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:15|unique:User,phone',
+            'phone' => 'nullable|string|max:11|unique:User,phone',
             'email' => 'nullable|email|max:100|unique:Account,email',
             'address' => 'nullable|string|max:255'
         ], [
@@ -265,8 +265,8 @@ class StudentController extends Controller
             'name' => 'required|string|max:50',
             'dob' => 'required|date',
             'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:15|unique:User,phone',
-            'email' => 'nullable|email|max:100|unique:Account,email',
+            'phone' => 'nullable|string|max:11',
+            'email' => 'nullable|email|max:100',
             'address' => 'nullable|string|max:255'
         ], [
             'name.required' => 'Tên không được để trống.',
