@@ -3,65 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Validator;
 use App\Models\ExamSection;
 use App\Models\Question;
 
-
 class ExcelController extends Controller
 {
-    // public function importExcel(Request $request)
-    // {
-    //     // Kiểm tra xem file có tồn tại không
-    //     if (!$request->hasFile('file')) {
-    //         return response()->json(['error' => 'No file uploaded'], 400);
-    //     }
-
-    //     $file = $request->file('file');
-
-    //     // Kiểm tra định dạng file (chỉ chấp nhận .xlsx)
-    //     if ($file->getClientOriginalExtension() !== 'xlsx') {
-    //         return response()->json(['error' => 'Invalid file format. Only .xlsx is allowed'], 400);
-    //     }
-
-    //     // Đọc file Excel
-    //     $spreadsheet = IOFactory::load($file->getPathname());
-    //     $worksheet = $spreadsheet->getActiveSheet();
-
-    //     // Sử dụng iterator để đọc nhanh từng hàng
-    //     $data = [];
-    //     foreach ($worksheet->getRowIterator(2) as $rowIndex => $row) { // Bắt đầu từ hàng số 2
-    //         $cellIterator = $row->getCellIterator();
-    //         $cellIterator->setIterateOnlyExistingCells(false); // Lấy tất cả cell, kể cả cell trống
-
-    //         $rowData = [];
-    //         foreach ($cellIterator as $cell) {
-    //             $rowData[] = $cell->getValue();
-    //         }
-
-    //         // Kiểm tra nếu hàng không đủ cột
-    //         if (count($rowData) < 8) {
-    //             continue;
-    //         }
-
-    //         $data[] = [
-    //             'question_number' => $rowData[0],
-    //             'question_text' => $rowData[1],
-    //             'option_a' => $rowData[2],
-    //             'option_b' => $rowData[3],
-    //             'option_c' => $rowData[4],
-    //             'option_d' => $rowData[5],
-    //             'correct_answer' => $rowData[6],
-    //             'explain' => $rowData[7],
-    //         ];
-    //     }
-
-    //     return response()->json($data);
-    // }
-
     public function importExamSection(Request $request)
     {
         try {
@@ -90,43 +39,42 @@ class ExcelController extends Controller
                 ], 400);
             }
 
-            $folderPath = $request->folder_path;
-
-            // Kiểm tra folder có tồn tại không
+            // Chuyển đổi đường dẫn Windows nếu cần
+            $folderPath = str_replace('\\', '/', $request->folder_path);
+            
+            // Kiểm tra thư mục tồn tại
             if (!is_dir($folderPath)) {
                 return response()->json([
                     'message' => 'Không tìm thấy thư mục',
+                    'details' => [
+                        'requested_path' => $folderPath
+                    ],
                     'code' => 404
                 ], 404);
             }
 
-            // Tìm file Excel đầu tiên
-            $excelFile = null;
-            $files = scandir($folderPath);
-            foreach ($files as $file) {
-                if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['xlsx', 'xls'])) {
-                    $excelFile = $folderPath . '/' . $file;
-                    break;
-                }
-            }
-
-            if (!$excelFile) {
+            // Tìm file Excel trong thư mục
+            $excelFiles = glob($folderPath . '/*.{xlsx,xls}', GLOB_BRACE);
+            if (empty($excelFiles)) {
                 return response()->json([
-                    'message' => 'Không tìm thấy file Excel trong folder',
+                    'message' => 'Không tìm thấy file Excel trong thư mục',
+                    'details' => [
+                        'folder_path' => $folderPath
+                    ],
                     'code' => 404
                 ], 404);
             }
 
+            // Lấy file Excel đầu tiên
+            $excelPath = $excelFiles[0];
+            
             // Đọc file Excel
-            $spreadsheet = IOFactory::load($excelFile);
+            $spreadsheet = IOFactory::load($excelPath);
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
 
             // Bỏ qua hàng header
             array_shift($rows);
-
-            $result = [];
-            $uploadedFiles = [];
 
             // Tạo exam section mới
             $examSection = ExamSection::create([
@@ -142,72 +90,51 @@ class ExcelController extends Controller
                 'is_Free' => $request->is_Free ?? false
             ]);
 
+            $result = [];
+
             // Xử lý từng dòng trong Excel
             foreach ($rows as $index => $row) {
                 // Lấy tên file từ Excel
                 $audioFileName = $row[0] ?? null;
                 $imageFileName = $row[1] ?? null;
 
-                // Thử các định dạng file khác nhau
-                $audioExtensions = ['.mp3', '.wav', '.m4a'];
-                $imageExtensions = ['.jpg', '.jpeg', '.png'];
-                
-                $audioFile = null;
-                $imageFile = null;
-
-                // Tìm file audio với các định dạng khác nhau
-                if ($audioFileName) {
-                    foreach ($audioExtensions as $ext) {
-                        $tempPath = $folderPath . '/' . $audioFileName . $ext;
-                        if (file_exists($tempPath)) {
-                            $audioFile = $audioFileName . $ext;
-                            break;
-                        }
-                    }
-                }
-
-                // Tìm file image với các định dạng khác nhau
-                if ($imageFileName) {
-                    foreach ($imageExtensions as $ext) {
-                        $tempPath = $folderPath . '/' . $imageFileName . $ext;
-                        if (file_exists($tempPath)) {
-                            $imageFile = $imageFileName . $ext;
-                            break;
-                        }
-                    }
-                }
-
                 // Upload và lấy URL cho audio file
-                if ($audioFile && !isset($uploadedFiles['audio'][$audioFile])) {
-                    $audioPath = $folderPath . '/' . $audioFile;
-                    
-                    if (file_exists($audioPath)) {
-                        try {
-                            $uploadedFiles['audio'][$audioFile] = Cloudinary::upload($audioPath, [
-                                'resource_type' => 'video',
-                                'timeout' => 300
-                            ])->getSecurePath();
-                            
-                            \Log::info('Uploaded audio URL: ' . $uploadedFiles['audio'][$audioFile]);
-                        } catch (\Exception $e) {
-                            \Log::error('Error uploading audio: ' . $e->getMessage());
+                if ($audioFileName) {
+                    $audioExtensions = ['mp3', 'wav', 'm4a'];
+                    foreach ($audioExtensions as $ext) {
+                        $audioPath = $folderPath . '/' . $audioFileName . '.' . $ext;
+                        if (file_exists($audioPath)) {
+                            try {
+                                $audioUrl = Cloudinary::upload($audioPath, [
+                                    'resource_type' => 'video',
+                                    'timeout' => 300
+                                ])->getSecurePath();
+                                
+                                \Log::info('Uploaded audio URL: ' . $audioUrl);
+                                break;
+                            } catch (\Exception $e) {
+                                \Log::error('Error uploading audio: ' . $e->getMessage());
+                            }
                         }
                     }
                 }
 
                 // Upload và lấy URL cho image file
-                if ($imageFile && !isset($uploadedFiles['image'][$imageFile])) {
-                    $imagePath = $folderPath . '/' . $imageFile;
-                    
-                    if (file_exists($imagePath)) {
-                        try {
-                            $uploadedFiles['image'][$imageFile] = Cloudinary::upload($imagePath, [
-                                'timeout' => 300
-                            ])->getSecurePath();
-                            
-                            \Log::info('Uploaded image URL: ' . $uploadedFiles['image'][$imageFile]);
-                        } catch (\Exception $e) {
-                            \Log::error('Error uploading image: ' . $e->getMessage());
+                if ($imageFileName) {
+                    $imageExtensions = ['jpg', 'jpeg', 'png'];
+                    foreach ($imageExtensions as $ext) {
+                        $imagePath = $folderPath . '/' . $imageFileName . '.' . $ext;
+                        if (file_exists($imagePath)) {
+                            try {
+                                $imageUrl = Cloudinary::upload($imagePath, [
+                                    'timeout' => 300
+                                ])->getSecurePath();
+                                
+                                \Log::info('Uploaded image URL: ' . $imageUrl);
+                                break;
+                            } catch (\Exception $e) {
+                                \Log::error('Error uploading image: ' . $e->getMessage());
+                            }
                         }
                     }
                 }
@@ -216,10 +143,10 @@ class ExcelController extends Controller
                 Question::create([
                     'exam_section_id' => $examSection->id,
                     'question_number' => $index + 1,
-                    'image_url' => $uploadedFiles['image'][$imageFile] ?? null,
-                    'audio_url' => $uploadedFiles['audio'][$audioFile] ?? null,
+                    'image_url' => $imageUrl ?? null,
+                    'audio_url' => $audioUrl ?? null,
                     'part_number' => $request->part_number,
-                    'question_text' => $row[3] ?? null,
+                    'question_text' => $row[4] ?? null,
                     'option_a' => $row[6] ?? null,
                     'option_b' => $row[7] ?? null,
                     'option_c' => $row[8] ?? null,
@@ -231,10 +158,10 @@ class ExcelController extends Controller
                 $result[] = [
                     'question_number' => $index + 1,
                     'part_number' => $request->part_number,
-                    'audio_file' => $audioFile,
-                    'image_file' => $imageFile,
-                    'audio_url' => $uploadedFiles['audio'][$audioFile] ?? null,
-                    'image_url' => $uploadedFiles['image'][$imageFile] ?? null,
+                    'audio_file' => $audioFileName,
+                    'image_file' => $imageFileName,
+                    'audio_url' => $audioUrl ?? null,
+                    'image_url' => $imageUrl ?? null,
                     'question_text' => $row[4] ?? null,
                     'option_a' => $row[6] ?? null,
                     'option_b' => $row[7] ?? null,
@@ -262,5 +189,4 @@ class ExcelController extends Controller
             ], 500);
         }
     }
-
 }
