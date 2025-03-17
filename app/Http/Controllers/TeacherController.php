@@ -22,12 +22,12 @@ class TeacherController extends Controller
     
         // Truy vấn danh sách giáo viên, Eager Loading để lấy email và chứng chỉ
         $query = User::query()
-            ->where('role', 'TEACHER')
-            ->where('is_deleted', false)
-            ->with([
-                'account:id,email', // Lấy email từ bảng account
-                'diplomas:id,user_id,certificate_name' // Lấy danh sách chứng chỉ từ bảng diploma
-            ]);
+                ->where('role', 'TEACHER')
+                ->where('is_deleted', false)
+                ->with([
+                    'account:id,email', // Lấy email từ bảng account
+                    'diplomas:id,user_id,certificate_name' // Lấy danh sách chứng chỉ từ bảng diploma
+                ]);
     
         // Phân trang dữ liệu
         $teachers = $query->paginate($pageSize, ['id', 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
@@ -36,7 +36,7 @@ class TeacherController extends Controller
         $formattedTeachers = $teachers->map(function ($teacher) {
             return [
                 'id' => $teacher->id,
-                'name' => "{$teacher->first_name} {$teacher->last_name}",
+                'name' => $teacher->full_name,
                 'dob' => $teacher->birth_date,
                 'gender' => $teacher->gender,
                 'phone' => $teacher->phone,
@@ -64,7 +64,7 @@ class TeacherController extends Controller
             'name' => 'required|string|max:50',
             'dob' => 'required|date',
             'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phoneNumber' => 'nullable|string|max:11|unique:User,phone',
+            'phone' => 'nullable|string|max:11|unique:User,phone',
             'email' => 'nullable|email|max:100|unique:Account,email',
             'address' => 'nullable|string|max:255',
             'certificates' => 'nullable|array|min:1'
@@ -74,8 +74,8 @@ class TeacherController extends Controller
             'dob.date' => 'Ngày sinh không hợp lệ.',
             'gender.required' => 'Giới tính không được để trống.',
             'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
-            'phoneNumber.unique' => 'Số điện thoại đã tồn tại.',
-            'phoneNumber.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
+            'phone.unique' => 'Số điện thoại đã tồn tại.',
+            'phone.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
             'email.email' => 'Email không hợp lệ.',
             'email.unique' => 'Email đã tồn tại.',
             'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
@@ -146,7 +146,7 @@ class TeacherController extends Controller
                 'full_name' => $request->name,
                 'birth_date' => $request->dob,
                 'gender' => $request->gender,
-                'phone' => $request->phoneNumber,
+                'phone' => $request->phone,
                 'address' => $request->address,
                 'role' => 'TEACHER',
                 'is_deleted' => false

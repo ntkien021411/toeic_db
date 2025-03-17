@@ -42,7 +42,7 @@ CREATE TABLE User (
 CREATE TABLE Room (
     id INT AUTO_INCREMENT PRIMARY KEY,
     class_code VARCHAR(50)  NOT NULL,
-    class_type ENUM('Beginner', 'Toeic A', 'Toeic B') NOT NULL,
+    class_type ENUM('Beginner', 'Toeic A', 'Toeic B') NOT NULL DEFAULT 'Beginner',
     class_name VARCHAR(255)  NULL,
     start_date DATE  NULL,
     end_date DATE  NULL,
@@ -51,6 +51,7 @@ CREATE TABLE Room (
     days VARCHAR(255) NULL, -- Lưu dạng "yy/mm/dddd,yy/mm/dddđ"
     student_count INT DEFAULT 0,
     is_full BOOLEAN NOT NULL DEFAULT FALSE,
+    status ENUM('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED') NOT NULL DEFAULT 'NOT_STARTED',
     teacher_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -245,46 +246,262 @@ INSERT INTO Class_User (class_id, user_id)
 SELECT (SELECT id FROM Room WHERE class_code = 'C105'), id FROM User 
 WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student13', 'student14', 'student15'));
 
+-- Thêm dữ liệu mẫu cho bài thi TOEIC
+-- Part 1: Photographs (6 câu hỏi)
+INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)
+VALUES ('TOEIC2024_P1', 'TOEIC Part 1 - Photographs', 'Listening', '1', 6, 2024, 6, 30, 'Practice Test', TRUE);
 
--- 1. Thêm bài thi TOEIC (7 bài thi với part 1-7, và 1 bài thi full)
-INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score)
+-- Thêm câu hỏi cho Part 1
+INSERT INTO Question (exam_section_id, question_number, part_number, audio_url, image_url, correct_answer)
 VALUES 
--- Bài thi TOEIC 7 Part
-('TOEIC_001', 'TOEIC Exam 1', 'Listening', '1', 10, 2025, 10, 50),
-('TOEIC_001', 'TOEIC Exam 1', 'Listening', '2', 30, 2025, 20, 100),
-('TOEIC_001', 'TOEIC Exam 1', 'Listening', '3', 30, 2025, 30, 100),
-('TOEIC_001', 'TOEIC Exam 1', 'Listening', '4', 30, 2025, 30, 100),
-('TOEIC_001', 'TOEIC Exam 1', 'Reading', '5', 40, 2025, 30, 150),
-('TOEIC_001', 'TOEIC Exam 1', 'Reading', '6', 12, 2025, 15, 70),
-('TOEIC_001', 'TOEIC Exam 1', 'Reading', '7', 48, 2025, 40, 180),
--- Bài thi TOEIC Full
-('TOEIC_002', 'TOEIC Full Exam', 'Full', 'Full', 200, 2025, 120, 750);
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 1, '1', '/audio/part1/q1.mp3', '/images/part1/q1.jpg', 'A'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 2, '1', '/audio/part1/q2.mp3', '/images/part1/q2.jpg', 'B'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 3, '1', '/audio/part1/q3.mp3', '/images/part1/q3.jpg', 'C'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 4, '1', '/audio/part1/q4.mp3', '/images/part1/q4.jpg', 'A'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 5, '1', '/audio/part1/q5.mp3', '/images/part1/q5.jpg', 'D'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 6, '1', '/audio/part1/q6.mp3', '/images/part1/q6.jpg', 'B');
 
--- 2. Thêm câu hỏi vào bảng Question (Mỗi part có 3 câu hỏi)
-INSERT INTO Question (exam_section_id, part_number, question_text, option_a, option_b, option_c, option_d, correct_answer)
-SELECT id, part_number, 
-    CONCAT('Question for part ', part_number, ' - 1') AS question_text,
-    'Option A', 'Option B', 'Option C', 'Option D', 'A' FROM Exam_Section WHERE part_number IN ('1', '2', '3', '4', '5', '6', '7')
-UNION ALL
-SELECT id, part_number, 
-    CONCAT('Question for part ', part_number, ' - 2') AS question_text,
-    'Option A', 'Option B', 'Option C', 'Option D', 'B' FROM Exam_Section WHERE part_number IN ('1', '2', '3', '4', '5', '6', '7')
-UNION ALL
-SELECT id, part_number, 
-    CONCAT('Question for part ', part_number, ' - 3') AS question_text,
-    'Option A', 'Option B', 'Option C', 'Option D', 'C' FROM Exam_Section WHERE part_number IN ('1', '2', '3', '4', '5', '6', '7');
+-- Part 2: Question-Response (25 câu hỏi)
+INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)
+VALUES ('TOEIC2024_P2', 'TOEIC Part 2 - Question-Response', 'Listening', '2', 25, 2024, 20, 100, 'Practice Test', TRUE);
 
--- 3. Thêm 3 chứng chỉ cho mỗi giáo viên
+-- Thêm câu hỏi mẫu cho Part 2 (chỉ hiển thị 5 câu đầu)
+INSERT INTO Question (exam_section_id, question_number, part_number, audio_url, correct_answer)
+VALUES 
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P2'), 1, '2', '/audio/part2/q1.mp3', 'B'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P2'), 2, '2', '/audio/part2/q2.mp3', 'A'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P2'), 3, '2', '/audio/part2/q3.mp3', 'C'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P2'), 4, '2', '/audio/part2/q4.mp3', 'B'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P2'), 5, '2', '/audio/part2/q5.mp3', 'A');
+
+-- Part 3: Conversations (39 câu hỏi - 13 đoạn hội thoại, mỗi đoạn 3 câu)
+INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)
+VALUES ('TOEIC2024_P3', 'TOEIC Part 3 - Conversations', 'Listening', '3', 39, 2024, 30, 120, 'Practice Test', FALSE);
+
+-- Thêm câu hỏi mẫu cho Part 3 (chỉ hiển thị 1 đoạn hội thoại - 3 câu)
+INSERT INTO Question (exam_section_id, question_number, part_number, audio_url, question_text, option_a, option_b, option_c, option_d, correct_answer)
+VALUES 
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P3'), 1, '3', '/audio/part3/conversation1.mp3', 
+'What is the conversation mainly about?', 
+'A business meeting schedule', 'A project deadline', 'A client presentation', 'A team lunch', 'B'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P3'), 2, '3', '/audio/part3/conversation1.mp3',
+'What does the woman suggest?',
+'Postponing the meeting', 'Working overtime', 'Hiring more staff', 'Canceling the project', 'A'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P3'), 3, '3', '/audio/part3/conversation1.mp3',
+'When will they meet again?',
+'This afternoon', 'Tomorrow morning', 'Next week', 'In two hours', 'C');
+
+-- Part 4: Short Talks (30 câu hỏi - 10 đoạn nói chuyện, mỗi đoạn 3 câu)
+INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)
+VALUES ('TOEIC2024_P4', 'TOEIC Part 4 - Short Talks', 'Listening', '4', 30, 2024, 30, 120, 'Practice Test', FALSE);
+
+-- Thêm câu hỏi mẫu cho Part 4 (chỉ hiển thị 1 đoạn nói chuyện - 3 câu)
+INSERT INTO Question (exam_section_id, question_number, part_number, audio_url, question_text, option_a, option_b, option_c, option_d, correct_answer)
+VALUES 
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P4'), 1, '4', '/audio/part4/talk1.mp3',
+'What is the announcement about?',
+'A new company policy', 'Office renovation', 'Holiday schedule', 'Safety procedures', 'B'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P4'), 2, '4', '/audio/part4/talk1.mp3',
+'When will the work be completed?',
+'Next week', 'Next month', 'In two weeks', 'In three days', 'C'),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P4'), 3, '4', '/audio/part4/talk1.mp3',
+'What are employees advised to do?',
+'Work from home', 'Use another entrance', 'Come in early', 'Take vacation days', 'A');
+
+-- Part 5: Incomplete Sentences (30 câu hỏi)
+INSERT INTO Exam_Section (
+    exam_code, exam_name, section_name, part_number, 
+    question_count, year, duration, max_score, type, is_Free
+) VALUES (
+    'TOEIC2024_P5', 
+    'TOEIC Part 5 - Incomplete Sentences', 
+    'Reading', 
+    '5', 
+    30, 
+    2024, 
+    25, 
+    120, 
+    'Practice Test', 
+    TRUE
+);
+
+-- Thêm câu hỏi mẫu cho Part 5 (5 câu đầu)
+INSERT INTO Question (
+    exam_section_id, 
+    question_number, 
+    part_number, 
+    question_text, 
+    option_a, 
+    option_b, 
+    option_c, 
+    option_d, 
+    correct_answer
+) VALUES 
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P5'), 1, '5',
+    'The company''s new policy requires all employees to _____ their vacation requests at least two weeks in advance.',
+    'submit',
+    'submitting',
+    'submitted',
+    'submission',
+    'A'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P5'), 2, '5',
+    '_____ the economic downturn, the company managed to increase its profits last quarter.',
+    'Despite',
+    'However',
+    'Although',
+    'Because',
+    'A'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P5'), 3, '5',
+    'The marketing team is working _____ to complete the campaign before the deadline.',
+    'diligent',
+    'diligently',
+    'diligence',
+    'diligented',
+    'B'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P5'), 4, '5',
+    'The new software update is _____ with all previous versions of the operating system.',
+    'compatible',
+    'compatibility',
+    'compatibly',
+    'compatibilize',
+    'A'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P5'), 5, '5',
+    'All participants must _____ the registration form by Friday.',
+    'complete',
+    'completing',
+    'completed',
+    'completion',
+    'A'
+);
+
+-- Part 6: Text Completion (16 câu hỏi - 4 đoạn văn, mỗi đoạn 4 chỗ trống)
+INSERT INTO Exam_Section (
+    exam_code, exam_name, section_name, part_number, 
+    question_count, year, duration, max_score, type, is_Free
+) VALUES (
+    'TOEIC2024_P6',
+    'TOEIC Part 6 - Text Completion',
+    'Reading',
+    '6',
+    16,
+    2024,
+    15,
+    80,
+    'Practice Test',
+    FALSE
+);
+
+-- Thêm câu hỏi mẫu cho Part 6 (1 đoạn văn - 4 câu)
+INSERT INTO Question (
+    exam_section_id,
+    question_number,
+    part_number,
+    question_text,
+    option_a,
+    option_b,
+    option_c,
+    option_d,
+    correct_answer
+) VALUES 
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P6'), 1, '6',
+    'Dear valued customer, We are writing to inform you about important changes to our service _____ .',
+    'policy',
+    'policies',
+    'policing',
+    'policed',
+    'B'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P6'), 2, '6',
+    'These changes will _____ effect starting next month.',
+    'take',
+    'make',
+    'do',
+    'get',
+    'A'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P6'), 3, '6',
+    'We appreciate your _____ understanding of these necessary updates.',
+    'continue',
+    'continues',
+    'continuing',
+    'continued',
+    'C'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P6'), 4, '6',
+    'Please do not _____ to contact us if you have any questions.',
+    'hesitate',
+    'hesitates',
+    'hesitating',
+    'hesitated',
+    'A'
+);
+
+-- Part 7: Reading Comprehension (54 câu hỏi - bao gồm single passages và double passages)
+INSERT INTO Exam_Section (
+    exam_code, exam_name, section_name, part_number, 
+    question_count, year, duration, max_score, type, is_Free
+) VALUES (
+    'TOEIC2024_P7',
+    'TOEIC Part 7 - Reading Comprehension',
+    'Reading',
+    '7',
+    54,
+    2024,
+    55,
+    180,
+    'Practice Test',
+    FALSE
+);
+
+-- Thêm câu hỏi mẫu cho Part 7 (3 câu cho một đoạn văn)
+INSERT INTO Question (
+    exam_section_id,
+    question_number,
+    part_number,
+    question_text,
+    option_a,
+    option_b,
+    option_c,
+    option_d,
+    correct_answer
+) VALUES 
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P7'), 1, '7',
+    'According to the email, what is the main purpose of the company meeting?',
+    'To discuss budget cuts',
+    'To announce promotions',
+    'To review quarterly results',
+    'To introduce new staff',
+    'C'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P7'), 2, '7',
+    'When will the meeting take place?',
+    'Monday morning',
+    'Tuesday afternoon',
+    'Wednesday morning',
+    'Thursday afternoon',
+    'B'
+),
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P7'), 3, '7',
+    'What are attendees asked to bring?',
+    'Their laptops',
+    'Department reports',
+    'Sales figures',
+    'Business cards',
+    'A'
+);
+
+-- Thêm Full Test TOEIC
+INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)
+VALUES ('TOEIC2024_FULL', 'TOEIC Full Test 2024', 'Full', 'Full', 200, 2024, 120, 990, 'Full Test', FALSE);
+
+-- 3. Thêm chứng chỉ cho mỗi giáo viên
 INSERT INTO Diploma (user_id, certificate_name, score, level, issued_by, issue_date, expiry_date)
 SELECT id, 'TOEIC Certification', ROUND(RAND() * 200 + 600, 2), 'Advanced', 'ETS', '2024-01-15', '2026-01-15' FROM User WHERE role = 'TEACHER'
 UNION ALL
 SELECT id, 'English Proficiency', ROUND(RAND() * 100, 2), 'Intermediate', 'British Council', '2023-05-10', '2025-05-10' FROM User WHERE role = 'TEACHER'
 UNION ALL
 SELECT id, 'Academic IELTS', ROUND(RAND() * 9, 2), 'Upper-Intermediate', 'IDP', '2023-07-20', '2025-07-20' FROM User WHERE role = 'TEACHER';
-
--- 4. Thêm kết quả thi cho student1 (Giả định user_id = 1 là student1)
--- Thêm kết quả thi cho student1 với giá trị trực tiếp
-INSERT INTO Exam_Result (user_id, exam_section_id, score, correct_answers, wrong_answers)
-VALUES 
-(1, '2', 600, 145, 120),
-(1, '3', 600, 145, 120);

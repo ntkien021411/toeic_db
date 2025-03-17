@@ -59,8 +59,8 @@ class StudentController extends Controller
             'name' => 'required|string|max:50',
             'dob' => 'required|date',
             'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:11|unique:User,phone',
-            'email' => 'nullable|email|max:100|unique:Account,email',
+            'phone' => 'nullable|string|max:11',
+            'email' => 'nullable|email|max:100',
             'address' => 'nullable|string|max:255'
         ], [
             'name.required' => 'Tên không được để trống.',
@@ -68,10 +68,8 @@ class StudentController extends Controller
             'dob.date' => 'Ngày sinh không hợp lệ.',
             'gender.required' => 'Giới tính không được để trống.',
             'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
-            'phone.unique' => 'Số điện thoại đã tồn tại.',
             'phone.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
             'email.email' => 'Email không hợp lệ.',
-            'email.unique' => 'Email đã tồn tại.',
             'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.'
         ]);
 
@@ -274,10 +272,8 @@ class StudentController extends Controller
             'dob.date' => 'Ngày sinh không hợp lệ.',
             'gender.required' => 'Giới tính không được để trống.',
             'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
-            'phone.unique' => 'Số điện thoại đã tồn tại.',
             'phone.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
             'email.email' => 'Email không hợp lệ.',
-            'email.unique' => 'Email đã tồn tại.',
             'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.'
         ]);
 
