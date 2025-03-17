@@ -122,4 +122,104 @@ class ClassUserController extends Controller
             ] : null
         ], 200);
     }
+
+    public function getClassDetail($class_id)
+    {
+        // Lấy thông tin lớp học và giáo viên
+        $class = Classes::where('id', $class_id)
+            ->where('is_deleted', false)
+            ->with(['teacher' => function($query) {
+                $query->select('id', 'first_name', 'last_name', 'full_name', 'image_link', 'phone', 'account_id')
+                      ->with(['account' => function($q) {
+                          $q->select('id', 'email');
+                      }]);
+            }])
+            ->first();
+
+        if (!$class) {
+            return response()->json([
+                'message' => 'Không tìm thấy lớp học hoặc lớp học đã bị xóa.',
+                'code' => 404,
+                'data' => null,
+                'meta' => null
+            ], 404);
+        }
+
+        // Lấy thông tin phân trang từ request
+        $pageNumber = request('pageNumber', 1);
+        $pageSize = request('pageSize', 10);
+
+        // Lấy danh sách học viên của lớp có phân trang
+        $students = ClassUser::where('class_id', $class_id)
+            ->whereNull('deleted_at')
+            ->with(['user' => function($query) {
+                $query->select('id', 'first_name', 'last_name', 'full_name', 'birth_date', 'gender', 'phone', 'address', 'account_id')
+                      ->where('role', 'STUDENT')
+                      ->with(['account' => function($q) {
+                          $q->select('id', 'email');
+                      }]);
+            }])
+            ->paginate($pageSize, ['*'], 'page', $pageNumber);
+
+        // Map lại để chỉ lấy thông tin user và thêm email từ account
+        $students->getCollection()->transform(function($classUser) {
+            $user = $classUser->user;
+            if ($user) {
+                $userData = $user->toArray();
+                $userData['email'] = $user->account ? $user->account->email : null;
+                unset($userData['account']); // Xóa thông tin account không cần thiết
+                unset($userData['account_id']); // Xóa account_id không cần thiết
+                return $userData;
+            }
+            return null;
+        });
+
+        // Lọc bỏ các giá trị null (trường hợp user đã bị xóa)
+        $students->setCollection(
+            $students->getCollection()->filter()
+        );
+
+        // Format lại thông tin giáo viên
+        $teacherInfo = null;
+        if ($class->teacher) {
+            $teacherInfo = [
+                'id' => $class->teacher->id,
+                'first_name' => $class->teacher->first_name,
+                'last_name' => $class->teacher->last_name,
+                'full_name' => $class->teacher->full_name,
+                'image_link' => $class->teacher->image_link,
+                'phone' => $class->teacher->phone,
+                'email' => $class->teacher->account ? $class->teacher->account->email : null
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Thông tin chi tiết lớp học.',
+            'code' => 200,
+            'data' => [
+                'class_info' => [
+                    'id' => $class->id,
+                    'class_code' => $class->class_code,
+                    'class_name' => $class->class_name,
+                    'class_type' => $class->class_type,
+                    'start_date' => $class->start_date,
+                    'end_date' => $class->end_date,
+                    'start_time' => $class->start_time,
+                    'end_time' => $class->end_time,
+                    'days' => $class->days,
+                    'student_count' => $class->student_count,
+                    'is_full' => $class->is_full,
+                    'status' => $class->status,
+                    'teacher' => $teacherInfo
+                ],
+                'students' => $students->items()
+            ],
+            'meta' => $students->total() > 0 ? [
+                'total' => $students->total(),
+                'pageCurrent' => $students->currentPage(),
+                'pageSize' => $students->perPage(),
+                'totalPage' => $students->lastPage()
+            ] : null
+        ], 200);
+    }
 }

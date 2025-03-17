@@ -225,5 +225,57 @@ class AdminController extends Controller
 
 
 
+        public function updateStatus(Request $request)
+        {
+            try {
+                // Validate input
+                $validator = Validator::make($request->all(), [
+                    'id' => 'required|integer|exists:Account,id',
+                    'statusUpdateUser' => 'required|boolean'
+                ]);
 
-}
+                if ($validator->fails()) {
+                    return response()->json([
+                        'message' => 'Dữ liệu không hợp lệ',
+                        'errors' => $validator->errors(),
+                        'code' => 400
+                    ], 400);
+                }
+
+                // Find account
+                $account = Account::where('id', $request->id)
+                                ->where('is_deleted', false)
+                                ->first();
+                if (!$account) {
+                    return response()->json([
+                        'message' => 'Không tìm thấy tài khoản',
+                        'code' => 404
+                    ], 404);
+                }
+
+                // Update status
+                $account->active_status = $request->statusUpdateUser;
+                $account->save();
+
+                return response()->json([
+                    'message' => 'Cập nhật trạng thái thành công',
+                    'code' => 200,
+                    'data' => [
+                        'id' => $account->id,
+                        'status' => $account->active_status
+                    ]
+                ], 200);
+
+            } catch (\Exception $e) {
+                \Log::error('Error in updateStatus: ' . $e->getMessage());
+                return response()->json([
+                    'message' => 'Có lỗi xảy ra trong quá trình cập nhật',
+                    'error' => $e->getMessage(),
+                    'code' => 500
+                ], 500);
+            }
+        }   
+
+
+
+    }

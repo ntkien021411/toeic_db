@@ -30,8 +30,6 @@ Route::prefix('api')->group(function () {
             return response()->json($request->uploaded_urls);
         })->middleware('upload.image');
 
-        //IMPORT EXCEL 
-        Route::post('/import-excel', [ExcelController::class, 'importExcel']);
 
         //EXAMSECTION Bài luyện thi toeic 
         Route::get('/tests-full/list', [ExamSectionController::class, 'listExam']); // Xem danh sách bài Luyện thi
@@ -63,12 +61,20 @@ Route::prefix('api')->group(function () {
 
         //ACCOUNT Xem danh sách tài khoản
         Route::get('/users/list', [AdminController::class, 'listAccount']);
+        Route::patch('/users/update-status-user', [AdminController::class, 'updateStatus']);
         Route::delete('/users/delete', [AdminController::class, 'delete']); 
 
         //CLASS Thêm lớp học 
         Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
         //Danh sách lớp học 
         Route::get('/classes/list', [ClassController::class, 'listClass']); 
+        //Chi tiết lớp học
+        Route::get('/classes/detail/{class_id}', [ClassUserController::class, 'getClassDetail']);
+
+
+        //Tạo môn học
+        //IMPORT EXCEL 
+        Route::post('/import-exam-section', [ExcelController::class, 'importExamSection']);
         
 
 

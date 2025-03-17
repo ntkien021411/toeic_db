@@ -225,26 +225,80 @@ VALUES ('C101', 'TOEIC Basic', '2024-01-10', '2024-06-10', (SELECT id FROM User 
        ('C104', 'TOEIC Listening Master', '2024-04-01', '2024-09-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2'))),
        ('C105', 'TOEIC Reading Master', '2024-05-01', '2024-10-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher3')));
 
--- Gán 3 sinh viên vào mỗi lớp
+-- Thêm học viên vào lớp C101 (TOEIC Basic)
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Room WHERE class_code = 'C101'), id FROM User 
-WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student1', 'student2', 'student3'));
+SELECT 
+    (SELECT id FROM Room WHERE class_code = 'C101'), 
+    id 
+FROM User 
+WHERE account_id IN (
+    SELECT id FROM Account 
+    WHERE username IN ('student4', 'student5', 'student6', 'student7', 'student8')
+)
+AND NOT EXISTS (
+    SELECT 1 FROM Class_User 
+    WHERE class_id = (SELECT id FROM Room WHERE class_code = 'C101')
+    AND user_id = User.id
+);
 
+-- Thêm học viên vào lớp C102 (TOEIC Intermediate)
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Room WHERE class_code = 'C102'), id FROM User 
-WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student4', 'student5', 'student6'));
+SELECT 
+    (SELECT id FROM Room WHERE class_code = 'C102'), 
+    id 
+FROM User 
+WHERE account_id IN (
+    SELECT id FROM Account 
+    WHERE username IN ('student8', 'student9', 'student10', 'student11', 'student12')
+)
+AND NOT EXISTS (
+    SELECT 1 FROM Class_User 
+    WHERE class_id = (SELECT id FROM Room WHERE class_code = 'C102')
+    AND user_id = User.id
+);
 
+-- Thêm học viên vào lớp C103 (TOEIC Advanced)
 INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Room WHERE class_code = 'C103'), id FROM User 
-WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student7', 'student8', 'student9'));
+SELECT 
+    (SELECT id FROM Room WHERE class_code = 'C103'), 
+    id 
+FROM User 
+WHERE account_id IN (
+    SELECT id FROM Account 
+    WHERE username IN ('student13', 'student14', 'student15', 'vu.letruong', 'kien.nguyentrung7')
+)
+AND NOT EXISTS (
+    SELECT 1 FROM Class_User 
+    WHERE class_id = (SELECT id FROM Room WHERE class_code = 'C103')
+    AND user_id = User.id
+);
 
-INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Room WHERE class_code = 'C104'), id FROM User 
-WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student10', 'student11', 'student12'));
+-- Cập nhật student_count cho các lớp
+UPDATE Room r
+SET student_count = (
+    SELECT COUNT(*) 
+    FROM Class_User cu 
+    WHERE cu.class_id = r.id 
+    AND cu.deleted_at IS NULL
+)
+WHERE id IN (
+    SELECT id 
+    FROM (
+        SELECT id FROM Room 
+        WHERE class_code IN ('C101', 'C102', 'C103')
+    ) AS temp
+);
 
-INSERT INTO Class_User (class_id, user_id)
-SELECT (SELECT id FROM Room WHERE class_code = 'C105'), id FROM User 
-WHERE account_id IN (SELECT id FROM Account WHERE username IN ('student13', 'student14', 'student15'));
+-- Cập nhật trạng thái is_full nếu số học viên vượt quá một ngưỡng nào đó (ví dụ: 10 học viên)
+UPDATE Room
+SET is_full = (student_count >= 10)
+WHERE id IN (
+    SELECT id 
+    FROM (
+        SELECT id FROM Room 
+        WHERE class_code IN ('C101', 'C102', 'C103')
+    ) AS temp
+);
 
 -- Thêm dữ liệu mẫu cho bài thi TOEIC
 -- Part 1: Photographs (6 câu hỏi)
