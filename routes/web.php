@@ -74,6 +74,10 @@ Route::prefix('api')->group(function () {
 
         //Tạo môn học
         //IMPORT EXCEL 
+         // API 1: Copy folder vào storage
+        Route::post('/copy-folder', [ExcelController::class, 'copyFolder']);
+        
+        // API 2: Import dữ liệu từ folder
         Route::post('/import-exam-section', [ExcelController::class, 'importExamSection']);
         
 
