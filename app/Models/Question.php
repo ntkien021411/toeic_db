@@ -17,6 +17,7 @@ class Question extends Model
         'audio_url', 
         'part_number', 
         'question_text', 
+        'explanation',
         'option_a',
         'option_b',
         'option_c',

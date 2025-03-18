@@ -9,126 +9,26 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ExamSection;
 use App\Models\Question;
+use ZipArchive;
+use RarArchive;
+use Illuminate\Support\Facades\File;
 
 class ExcelController extends Controller
 {
     /**
-     * API 1: Copy folder vào storage của server
-     */
-    public function copyFolder(Request $request)
-    {
-        try {
-            // Validate đầu vào
-            $validator = Validator::make($request->all(), [
-                'folder_path' => 'required|string'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Dữ liệu không hợp lệ',
-                    'errors' => $validator->errors(),
-                    'code' => 400
-                ], 400);
-            }
-
-            // Chuẩn hóa đường dẫn
-            $sourcePath = str_replace('\\', '/', $request->folder_path);
-            $sourcePath = rtrim($sourcePath, '/');
-
-            // Kiểm tra thư mục nguồn tồn tại
-            if (!is_dir($sourcePath)) {
-                return response()->json([
-                    'message' => 'Không tìm thấy thư mục nguồn',
-                    'details' => [
-                        'folder_path' => $sourcePath
-                    ],
-                    'code' => 404
-                ], 404);
-            }
-
-            // Sử dụng thư mục cố định là 'sample'
-            $storagePath = 'uploads/sample';
-            
-            // Xóa thư mục cũ nếu tồn tại
-            if (Storage::exists($storagePath)) {
-                Storage::deleteDirectory($storagePath);
-            }
-            
-            // Tạo thư mục mới
-            Storage::makeDirectory($storagePath);
-
-            // Quét và phân loại các file
-            $uploadedFiles = [
-                'excel' => [],
-                'audio' => [],
-                'image' => []
-            ];
-
-            // Đọc tất cả file trong thư mục nguồn
-            $files = scandir($sourcePath);
-            foreach ($files as $file) {
-                if ($file === '.' || $file === '..') continue;
-
-                $filePath = $sourcePath . '/' . $file;
-                if (!is_file($filePath)) continue;
-
-                $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-                
-                // Copy file vào storage
-                Storage::put(
-                    $storagePath . '/' . $file, 
-                    file_get_contents($filePath)
-                );
-
-                // Phân loại file
-                if (in_array($extension, ['xlsx', 'xls'])) {
-                    $uploadedFiles['excel'][] = $file;
-                } elseif (in_array($extension, ['mp3', 'wav', 'm4a'])) {
-                    $uploadedFiles['audio'][] = $file;
-                } elseif (in_array($extension, ['jpg', 'jpeg', 'png'])) {
-                    $uploadedFiles['image'][] = $file;
-                }
-            }
-
-            if (empty($uploadedFiles['excel'])) {
-                return response()->json([
-                    'message' => 'Không tìm thấy file Excel trong thư mục',
-                    'code' => 404
-                ], 404);
-            }
-
-            return response()->json([
-                'message' => 'Copy thư mục thành công',
-                'code' => 200,
-                'data' => [
-                    'folder_name' => 'sample',
-                    'excel_files' => $uploadedFiles['excel'],
-                    'audio_files' => $uploadedFiles['audio'],
-                    'image_files' => $uploadedFiles['image']
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            \Log::error('Error in copyFolder: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Có lỗi xảy ra trong quá trình copy',
-                'error' => $e->getMessage(),
-                'code' => 500
-            ], 500);
-        }
-    }
-
-    /**
-     * API 2: Xử lý dữ liệu từ folder đã copy
+     * API: Upload files và import dữ liệu
      */
     public function importExamSection(Request $request)
     {
         try {
             // Tăng thời gian thực thi
             ini_set('max_execution_time', 300);
+            ini_set('memory_limit', '256M');
 
             // Validate đầu vào
             $validator = Validator::make($request->all(), [
+                'files' => 'required|array',
+                'files.*' => 'required|file|mimes:zip',
                 'exam_code' => 'required|string|max:50',
                 'exam_name' => 'nullable|string|max:255',
                 'section_name' => 'required|in:Listening,Reading,Full',
@@ -137,7 +37,7 @@ class ExcelController extends Controller
                 'duration' => 'nullable|integer|min:1',
                 'max_score' => 'nullable|integer|min:1',
                 'type' => 'nullable|string|max:255',
-                'is_Free' => 'boolean'
+                'is_Free' => 'required|in:true,false,0,1'
             ]);
 
             if ($validator->fails()) {
@@ -148,158 +48,315 @@ class ExcelController extends Controller
                 ], 400);
             }
 
-            // Sử dụng thư mục cố định là 'sample'
-            $folderPath = 'uploads/sample';
-            if (!Storage::exists($folderPath)) {
-                return response()->json([
-                    'message' => 'Không tìm thấy thư mục sample',
-                    'code' => 404
-                ], 404);
+            // Convert is_Free to boolean
+            $isFree = filter_var($request->is_Free, FILTER_VALIDATE_BOOLEAN);
+
+            // Tạo thư mục tạm thời
+            $tempFolderName = uniqid('temp_');
+            $tempPath = storage_path('app/temp/' . $tempFolderName);
+            
+            // Đảm bảo thư mục tạm tồn tại
+            if (!File::exists($tempPath)) {
+                File::makeDirectory($tempPath, 0755, true);
             }
 
-            // Tìm file Excel
-            $excelFiles = Storage::files($folderPath);
-            $excelFile = null;
-            foreach ($excelFiles as $file) {
-                if (str_ends_with(strtolower($file), '.xlsx') || str_ends_with(strtolower($file), '.xls')) {
-                    $excelFile = $file;
-                    break;
+            // Quét và phân loại các file
+            $uploadedFiles = [
+                'excel' => [],
+                'audio' => [],
+                'image' => []
+            ];
+
+            // Xử lý file upload
+            foreach ($request->file('files') as $file) {
+                try {
+                    $fileName = $file->getClientOriginalName();
+                    $extension = strtolower($file->getClientOriginalExtension());
+                    
+                    // Lưu file vào thư mục tạm
+                    $file->move($tempPath, $fileName);
+                    $archivePath = $tempPath . '/' . $fileName;
+
+                    // Xử lý file zip
+                    if ($extension === 'zip') {
+                        $zip = new ZipArchive();
+                        if ($zip->open($archivePath) === TRUE) {
+                            // Giải nén vào thư mục tạm
+                            $zip->extractTo($tempPath);
+                            $zip->close();
+                            
+                            // Xóa file zip sau khi giải nén
+                            @unlink($archivePath);
+
+                            // Tìm tất cả file trong thư mục tạm và thư mục con
+                            $allFiles = $this->getAllFiles($tempPath);
+
+                            foreach ($allFiles as $extractedFile) {
+                                $extractedFileName = basename($extractedFile);
+                                $extractedExtension = strtolower(pathinfo($extractedFile, PATHINFO_EXTENSION));
+                                
+                                // Di chuyển file lên thư mục gốc nếu nó nằm trong thư mục con
+                                if (dirname($extractedFile) !== $tempPath) {
+                                    $newPath = $tempPath . '/' . $extractedFileName;
+                                    rename($extractedFile, $newPath);
+                                }
+                                
+                                // Phân loại file
+                                if (in_array($extractedExtension, ['xlsx', 'xls'])) {
+                                    $uploadedFiles['excel'][] = $extractedFileName;
+                                } elseif (in_array($extractedExtension, ['mp3', 'wav', 'm4a'])) {
+                                    $uploadedFiles['audio'][] = $extractedFileName;
+                                } elseif (in_array($extractedExtension, ['jpg', 'jpeg', 'png'])) {
+                                    $uploadedFiles['image'][] = $extractedFileName;
+                                }
+                            }
+                        } else {
+                            throw new \Exception('Không thể mở file zip');
+                        }
+                    } else {
+                        throw new \Exception('Chỉ chấp nhận file ZIP');
+                    }
+
+                } catch (\Exception $e) {
+                    // Xóa thư mục tạm nếu có lỗi
+                    File::deleteDirectory($tempPath);
+                    throw new \Exception('Lỗi xử lý file ' . $fileName . ': ' . $e->getMessage());
                 }
             }
 
-            if (!$excelFile) {
+            // Kiểm tra file Excel
+            if (empty($uploadedFiles['excel'])) {
+                File::deleteDirectory($tempPath);
                 return response()->json([
-                    'message' => 'Không tìm thấy file Excel trong thư mục',
+                    'message' => 'Không tìm thấy file Excel',
                     'code' => 404
                 ], 404);
             }
 
             // Đọc file Excel
-            $excelPath = Storage::path($excelFile);
-            $spreadsheet = IOFactory::load($excelPath);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
-
-            // Bỏ qua hàng header
-            array_shift($rows);
-
-            // Tạo exam section mới
-            $examSection = ExamSection::create([
-                'exam_code' => $request->exam_code,
-                'exam_name' => $request->exam_name,
-                'section_name' => $request->section_name,
-                'part_number' => $request->part_number,
-                'question_count' => count($rows),
-                'year' => $request->year,
-                'duration' => $request->duration,
-                'max_score' => $request->max_score,
-                'type' => $request->type,
-                'is_Free' => $request->is_Free ?? false
-            ]);
-
-            $result = [];
-            $processedFiles = [
-                'audio' => [],
-                'image' => []
-            ];
-
-            // Xử lý từng dòng trong Excel
-            foreach ($rows as $index => $row) {
-                $audioFileName = trim($row[0] ?? '');
-                $imageFileName = trim($row[1] ?? '');
-                $audioUrl = null;
-                $imageUrl = null;
-
-                // Upload audio file nếu chưa được xử lý
-                if ($audioFileName && !isset($processedFiles['audio'][$audioFileName])) {
-                    $audioPath = Storage::path($folderPath . '/' . $audioFileName);
-                    if (file_exists($audioPath)) {
-                        try {
-                            $audioUrl = Cloudinary::upload($audioPath, [
-                                'resource_type' => 'video',
-                                'timeout' => 300
-                            ])->getSecurePath();
-                            $processedFiles['audio'][$audioFileName] = $audioUrl;
-                            \Log::info('Uploaded audio: ' . $audioFileName . ' -> ' . $audioUrl);
-                        } catch (\Exception $e) {
-                            \Log::error('Error uploading audio ' . $audioFileName . ': ' . $e->getMessage());
-                        }
-                    } else {
-                        \Log::warning('Audio file not found: ' . $audioFileName);
-                    }
-                } else if (isset($processedFiles['audio'][$audioFileName])) {
-                    $audioUrl = $processedFiles['audio'][$audioFileName];
-                }
-
-                // Upload image file nếu chưa được xử lý
-                if ($imageFileName && !isset($processedFiles['image'][$imageFileName])) {
-                    $imagePath = Storage::path($folderPath . '/' . $imageFileName);
-                    if (file_exists($imagePath)) {
-                        try {
-                            $imageUrl = Cloudinary::upload($imagePath, [
-                                'timeout' => 300
-                            ])->getSecurePath();
-                            $processedFiles['image'][$imageFileName] = $imageUrl;
-                            \Log::info('Uploaded image: ' . $imageFileName . ' -> ' . $imageUrl);
-                        } catch (\Exception $e) {
-                            \Log::error('Error uploading image ' . $imageFileName . ': ' . $e->getMessage());
-                        }
-                    } else {
-                        \Log::warning('Image file not found: ' . $imageFileName);
-                    }
-                } else if (isset($processedFiles['image'][$imageFileName])) {
-                    $imageUrl = $processedFiles['image'][$imageFileName];
-                }
-
-                // Tạo question mới trong database
-                Question::create([
-                    'exam_section_id' => $examSection->id,
-                    'question_number' => $index + 1,
-                    'image_url' => $imageUrl,
-                    'audio_url' => $audioUrl,
-                    'part_number' => $request->part_number,
-                    'question_text' => $row[4] ?? null,
-                    'option_a' => $row[6] ?? null,
-                    'option_b' => $row[7] ?? null,
-                    'option_c' => $row[8] ?? null,
-                    'option_d' => $row[9] ?? null,
-                    'correct_answer' => $row[10] ?? null
-                ]);
-
-                // Thêm thông tin vào kết quả
-                $result[] = [
-                    'question_number' => $index + 1,
-                    'part_number' => $request->part_number,
-                    'audio_file' => $audioFileName,
-                    'image_file' => $imageFileName,
-                    'audio_url' => $audioUrl,
-                    'image_url' => $imageUrl,
-                    'question_text' => $row[4] ?? null,
-                    'option_a' => $row[6] ?? null,
-                    'option_b' => $row[7] ?? null,
-                    'option_c' => $row[8] ?? null,
-                    'option_d' => $row[9] ?? null,
-                    'correct_answer' => $row[10] ?? null
-                ];
+            $excelPath = $tempPath . '/' . $uploadedFiles['excel'][0];
+            if (!File::exists($excelPath)) {
+                File::deleteDirectory($tempPath);
+                return response()->json([
+                    'message' => 'Không tìm thấy file Excel',
+                    'code' => 404
+                ], 404);
             }
 
-            return response()->json([
-                'message' => 'Xử lý dữ liệu thành công',
-                'code' => 200,
-                'data' => [
-                    'exam_section' => $examSection,
-                    'questions' => $result
-                ]
-            ], 200);
+            try {
+                $spreadsheet = IOFactory::load($excelPath);
+                $worksheet = $spreadsheet->getActiveSheet();
+                $rows = $worksheet->toArray();
+
+                // Bỏ qua hàng header
+                array_shift($rows);
+
+                // Upload tất cả file media lên Cloudinary trước
+                $processedFiles = [
+                    'audio' => [],
+                    'image' => []
+                ];
+
+                // Lấy danh sách file cần upload từ Excel
+                $mediaFiles = [
+                    'audio' => [],
+                    'image' => []
+                ];
+                
+                foreach ($rows as $row) {
+                    $audioFileName = trim($row[0] ?? '');
+                    $imageFileName = trim($row[1] ?? '');
+                    
+                    if ($audioFileName) {
+                        // Tìm file audio với các extension có thể
+                        foreach (['mp3', 'wav', 'm4a'] as $ext) {
+                            $fullFileName = $audioFileName . '.' . $ext;
+                            $audioPath = $this->findFileInDirectory($tempPath, $fullFileName);
+                            if ($audioPath) {
+                                $mediaFiles['audio'][$audioFileName] = $audioPath;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if ($imageFileName) {
+                        // Tìm file image với các extension có thể
+                        foreach (['jpg', 'jpeg', 'png'] as $ext) {
+                            $fullFileName = $imageFileName . '.' . $ext;
+                            $imagePath = $this->findFileInDirectory($tempPath, $fullFileName);
+                            if ($imagePath) {
+                                $mediaFiles['image'][$imageFileName] = $imagePath;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Upload audio files
+                foreach ($mediaFiles['audio'] as $fileName => $filePath) {
+                    if (File::exists($filePath)) {
+                        try {
+                            $uploadResult = Cloudinary::upload($filePath, [
+                                'resource_type' => 'video',
+                                'timeout' => 300,
+                                'folder' => 'toeic/audio'
+                            ]);
+                            $processedFiles['audio'][$fileName] = $uploadResult->getSecurePath();
+                        } catch (\Exception $e) {
+                            continue;
+                        }
+                    }
+                }
+
+                // Upload image files
+                foreach ($mediaFiles['image'] as $fileName => $filePath) {
+                    if (File::exists($filePath)) {
+                        try {
+                            $uploadResult = Cloudinary::upload($filePath, [
+                                'resource_type' => 'image',
+                                'timeout' => 300,
+                                'folder' => 'toeic/images'
+                            ]);
+                            $processedFiles['image'][$fileName] = $uploadResult->getSecurePath();
+                        } catch (\Exception $e) {
+                            continue;
+                        }
+                    }
+                }
+
+                \Log::info('All processed files:', $processedFiles);
+
+                if (empty($processedFiles['audio']) && empty($processedFiles['image'])) {
+                    \Log::warning('No files were uploaded to Cloudinary');
+                }
+
+                // Tạo exam section sau khi đã upload xong tất cả file
+                $examSection = ExamSection::create([
+                    'exam_code' => $request->exam_code,
+                    'exam_name' => $request->exam_name,
+                    'section_name' => $request->section_name,
+                    'part_number' => $request->part_number,
+                    'question_count' => count($rows),
+                    'year' => $request->year,
+                    'duration' => $request->duration,
+                    'max_score' => $request->max_score,
+                    'type' => $request->type,
+                    'is_Free' => $isFree
+                ]);
+
+                $result = [];
+
+                // Tạo questions với URL đã có sẵn
+                foreach ($rows as $index => $row) {
+                    $audioFileName = trim($row[0] ?? '');
+                    $imageFileName = trim($row[1] ?? '');
+                    
+                    $audioUrl = null;
+                    $imageUrl = null;
+
+                    if ($audioFileName && isset($processedFiles['audio'][$audioFileName])) {
+                        $audioUrl = $processedFiles['audio'][$audioFileName];
+                    }
+
+                    if ($imageFileName && isset($processedFiles['image'][$imageFileName])) {
+                        $imageUrl = $processedFiles['image'][$imageFileName];
+                    }
+
+                    // Tạo question mới
+                    $question = Question::create([
+                        'exam_section_id' => $examSection->id,
+                        'question_number' => $index + 1,
+                        'image_url' => $imageUrl,
+                        'audio_url' => $audioUrl,
+                        'part_number' => $request->part_number,
+                        'question_text' => $row[3] ?? null,
+                        'explanation' => $row[9] ?? null,
+                        'option_a' => $row[4] ?? null,
+                        'option_b' => $row[5] ?? null,
+                        'option_c' => $row[6] ?? null,
+                        'option_d' => $row[7] ?? null,
+                        'correct_answer' => $row[8] ?? null
+                    ]);
+
+                    // Thêm vào kết quả
+                    $result[] = [
+                        'exam_section_id' => $examSection->id,
+                        'question_number' => $index + 1,
+                        'part_number' => $request->part_number,
+                        'audio_file' => $audioFileName,
+                        'image_file' => $imageFileName,
+                        'audio_url' => $audioUrl,
+                        'image_url' => $imageUrl,
+                        'question_text' => $row[3] ?? null,
+                        'explanation' => $row[9] ?? null,
+                        'option_a' => $row[4] ?? null,
+                        'option_b' => $row[5] ?? null,
+                        'option_c' => $row[6] ?? null,
+                        'option_d' => $row[7] ?? null,
+                        'correct_answer' => $row[8] ?? null
+                    ];
+                }
+
+                // Xóa thư mục tạm
+                File::deleteDirectory($tempPath);
+
+                return response()->json([
+                    'message' => 'Xử lý dữ liệu thành công',
+                    'code' => 200,
+                    'data' => [
+                        'exam_section' => $examSection,
+                        'questions' => $result
+                    ]
+                ], 200);
+
+            } catch (\Exception $e) {
+                // Xóa thư mục tạm nếu có lỗi
+                File::deleteDirectory($tempPath);
+                throw $e;
+            }
 
         } catch (\Exception $e) {
-            \Log::error('Error in importExamSection: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'message' => 'Có lỗi xảy ra trong quá trình xử lý',
                 'error' => $e->getMessage(),
                 'code' => 500
             ], 500);
         }
+    }
+
+    /**
+     * Lấy tất cả file trong một thư mục và các thư mục con
+     */
+    private function getAllFiles($dir) {
+        $files = [];
+        
+        // Quét tất cả file và thư mục
+        $items = scandir($dir);
+        
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') continue;
+            
+            $path = $dir . '/' . $item;
+            
+            if (is_dir($path)) {
+                // Nếu là thư mục, đệ quy để lấy file trong thư mục con
+                $files = array_merge($files, $this->getAllFiles($path));
+            } else {
+                // Nếu là file, thêm vào danh sách
+                $files[] = $path;
+            }
+        }
+        
+        return $files;
+    }
+
+    private function findFileInDirectory($dir, $fileName) {
+        $files = $this->getAllFiles($dir);
+        foreach ($files as $file) {
+            if (basename($file) === $fileName) {
+                return $file;
+            }
+        }
+        return null;
     }
 }

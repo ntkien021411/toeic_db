@@ -1,6 +1,6 @@
 -- Chọn database sử dụng
 USE toeic_db;
-
+SET SQL_SAFE_UPDATES = 0;
 -- 1. Bảng Account (Bảng gốc chứa thông tin tài khoản)
 CREATE TABLE Account (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,6 +108,7 @@ CREATE TABLE Question (
     option_b TEXT  NULL,
     option_c TEXT  NULL,
     option_d TEXT  NULL,
+    explanation TEXT  NULL,
     correct_answer CHAR(1) CHECK (correct_answer IN ('A', 'B', 'C', 'D')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
