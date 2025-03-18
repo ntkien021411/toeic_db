@@ -131,9 +131,9 @@ class ExcelController extends Controller
                     'message' => 'Không tìm thấy file Excel',
                     'code' => 404
                 ], 404);
-            }
+        }
 
-            // Đọc file Excel
+        // Đọc file Excel
             $excelPath = $tempPath . '/' . $uploadedFiles['excel'][0];
             if (!File::exists($excelPath)) {
                 File::deleteDirectory($tempPath);
@@ -145,7 +145,7 @@ class ExcelController extends Controller
 
             try {
                 $spreadsheet = IOFactory::load($excelPath);
-                $worksheet = $spreadsheet->getActiveSheet();
+        $worksheet = $spreadsheet->getActiveSheet();
                 $rows = $worksheet->toArray();
 
                 // Bỏ qua hàng header
@@ -219,7 +219,7 @@ class ExcelController extends Controller
                             ]);
                             $processedFiles['image'][$fileName] = $uploadResult->getSecurePath();
                         } catch (\Exception $e) {
-                            continue;
+                continue;
                         }
                     }
                 }

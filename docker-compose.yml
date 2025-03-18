@@ -20,6 +20,10 @@ services:
       - DB_DATABASE=toeic_db
       - DB_USERNAME=laravel
       - DB_PASSWORD=laravel
+      - upload_max_filesize=100M
+      - post_max_size=100M
+      - max_execution_time=300
+      - memory_limit=256M
 
   nginx:
     image: nginx:latest
@@ -29,11 +33,13 @@ services:
       - "8000:80"
     volumes:
       - .:/var/www
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
     networks:
       - laravel
+    environment:
+      - client_max_body_size=100M
 
   db:
     image: mysql:8.0
