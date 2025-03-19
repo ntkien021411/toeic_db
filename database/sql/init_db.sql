@@ -175,27 +175,27 @@ INSERT INTO Account (username, email, password, active_status) VALUES
 INSERT INTO User (account_id, role, first_name, last_name) VALUES
 ((SELECT id FROM Account WHERE username = 'admin'), 'ADMIN', 'Admin', 'User');
 
--- Thêm 2 tài khoản mới
-INSERT INTO Account (username, email, password, active_status) VALUES
-('vu.letruong', 'vu.letruong@vti.com.vn', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
-('kien.nguyentrung7', 'kien.nguyentrung7@vti.com.vn', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE);
+-- Thêm 2 tài khoản mới với đầy đủ thông tin
+INSERT INTO Account (username, email, password, active_status, active_date, is_first) VALUES
+('vu.letruong', 'vu.letruong@vti.com.vn', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE, NOW(), FALSE),
+('kien.nguyentrung7', 'kien.nguyentrung7@vti.com.vn', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE, NOW(), FALSE);
 
--- Thêm thông tin User tương ứng với 2 tài khoản mới
-INSERT INTO User (account_id, role, first_name, last_name) VALUES
-((SELECT id FROM Account WHERE username = 'vu.letruong'), 'STUDENT', 'Le Truong', 'Vu'),
-((SELECT id FROM Account WHERE username = 'kien.nguyentrung7'), 'STUDENT', 'Nguyen Trung', 'Kien');
+-- Thêm thông tin User tương ứng với 2 tài khoản mới với đầy đủ thông tin
+INSERT INTO User (account_id, role, first_name, last_name, full_name, birth_date, gender, phone, image_link, facebook_link, address) VALUES
+((SELECT id FROM Account WHERE username = 'vu.letruong'), 'STUDENT', 'Le Truong', 'Vu', 'Vu Le Truong', '1995-05-15', 'MALE', '0912345678', '/images/users/vu.jpg', 'https://facebook.com/vu.letruong', 'Ha Noi, Vietnam'),
+((SELECT id FROM Account WHERE username = 'kien.nguyentrung7'), 'STUDENT', 'Nguyen Trung', 'Kien', 'Kien Nguyen Trung', '1996-08-20', 'MALE', '0923456789', '/images/users/kien.jpg', 'https://facebook.com/kien.nguyentrung7', 'Ha Noi, Vietnam');
 
 
--- Thêm 3 tài khoản Giáo viên
-INSERT INTO Account (username, email, password, active_status) VALUES
-('teacher1', 'teacher1@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
-('teacher2', 'teacher2@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE),
-('teacher3', 'teacher3@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE);
+-- Thêm 3 tài khoản Giáo viên với đầy đủ thông tin
+INSERT INTO Account (username, email, password, active_status, active_date, is_first) VALUES
+('teacher1', 'teacher1@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE, NOW(), FALSE),
+('teacher2', 'teacher2@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE, NOW(), FALSE),
+('teacher3', 'teacher3@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJVOIwtGSWngvooxfH5Pmw.SXBIy', TRUE, NOW(), FALSE);
 
-INSERT INTO User (account_id, role, first_name, last_name) VALUES
-((SELECT id FROM Account WHERE username = 'teacher1'), 'TEACHER', 'John', 'Doe'),
-((SELECT id FROM Account WHERE username = 'teacher2'), 'TEACHER', 'Alice', 'Smith'),
-((SELECT id FROM Account WHERE username = 'teacher3'), 'TEACHER', 'Bob', 'Brown');
+INSERT INTO User (account_id, role, first_name, last_name, full_name, birth_date, gender, phone, image_link, facebook_link, address) VALUES
+((SELECT id FROM Account WHERE username = 'teacher1'), 'TEACHER', 'John', 'Doe', 'John Doe', '1985-03-10', 'MALE', '0934567890', '/images/users/teacher1.jpg', 'https://facebook.com/john.doe', 'New York, USA'),
+((SELECT id FROM Account WHERE username = 'teacher2'), 'TEACHER', 'Alice', 'Smith', 'Alice Smith', '1988-07-15', 'FEMALE', '0945678901', '/images/users/teacher2.jpg', 'https://facebook.com/alice.smith', 'London, UK'),
+((SELECT id FROM Account WHERE username = 'teacher3'), 'TEACHER', 'Bob', 'Brown', 'Bob Brown', '1990-11-20', 'MALE', '0956789012', '/images/users/teacher3.jpg', 'https://facebook.com/bob.brown', 'Sydney, Australia');
 
 -- Thêm 15 tài khoản Sinh viên
 INSERT INTO Account (username, email, password, active_status) 
@@ -218,13 +218,23 @@ VALUES ('student1', 'student1@example.com', '$2y$10$1YiNWOwLxs6v7L1LuVU9vO4MeyJV
 INSERT INTO User (account_id, role, first_name, last_name)
 SELECT id, 'STUDENT', CONCAT('Student', id), 'User' FROM Account WHERE username LIKE 'student%';
 
--- Tạo 5 lớp học và gán giáo viên
-INSERT INTO Room (class_code, class_name, start_date, end_date, teacher_id) 
-VALUES ('C101', 'TOEIC Basic', '2024-01-10', '2024-06-10', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1'))),
-       ('C102', 'TOEIC Intermediate', '2024-02-15', '2024-07-15', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1'))),
-       ('C103', 'TOEIC Advanced', '2024-03-01', '2024-08-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2'))),
-       ('C104', 'TOEIC Listening Master', '2024-04-01', '2024-09-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2'))),
-       ('C105', 'TOEIC Reading Master', '2024-05-01', '2024-10-01', (SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher3')));
+-- Tạo 5 lớp học và gán giáo viên với đầy đủ thông tin
+INSERT INTO Room (class_code, class_type, class_name, start_date, end_date, start_time, end_time, days, student_count, teacher_id, status) 
+VALUES 
+('C101', 'Beginner', 'TOEIC Basic Course', '2024-01-10', '2024-06-10', '08:00', '10:00', '10-01-2024,12-01-2024,14-01-2024', 0, 
+(SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1')), 'NOT_STARTED'),
+
+('C102', 'Toeic A', 'TOEIC Intermediate Course', '2024-02-15', '2024-07-15', '10:30', '12:30', '15-02-2024,17-02-2024,19-02-2024', 0,
+(SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher1')), 'NOT_STARTED'),
+
+('C103', 'Toeic B', 'TOEIC Advanced Course', '2024-03-01', '2024-08-01', '13:30', '15:30', '01-03-2024,03-03-2024,05-03-2024', 0,
+(SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2')), 'NOT_STARTED'),
+
+('C104', 'Toeic A', 'TOEIC Listening Master Course', '2024-04-01', '2024-09-01', '16:00', '18:00', '01-04-2024,03-04-2024,05-04-2024', 0,
+(SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher2')), 'NOT_STARTED'),
+
+('C105', 'Toeic B', 'TOEIC Reading Master Course', '2024-05-01', '2024-10-01', '18:30', '20:30', '01-05-2024,03-05-2024,05-05-2024', 0,
+(SELECT id FROM User WHERE account_id = (SELECT id FROM Account WHERE username = 'teacher3')), 'NOT_STARTED');
 
 -- Thêm học viên vào lớp C101 (TOEIC Basic)
 INSERT INTO Class_User (class_id, user_id)
@@ -301,20 +311,43 @@ WHERE id IN (
     ) AS temp
 );
 
--- Thêm dữ liệu mẫu cho bài thi TOEIC
+-- Thêm dữ liệu mẫu cho bài thi TOEIC với đầy đủ thông tin
 -- Part 1: Photographs (6 câu hỏi)
 INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)
 VALUES ('TOEIC2024_P1', 'TOEIC Part 1 - Photographs', 'Listening', '1', 6, 2024, 6, 30, 'Practice Test', TRUE);
 
--- Thêm câu hỏi cho Part 1
-INSERT INTO Question (exam_section_id, question_number, part_number, audio_url, image_url, correct_answer)
+-- Thêm câu hỏi cho Part 1 với đầy đủ thông tin
+INSERT INTO Question (exam_section_id, question_number, part_number, audio_url, image_url, question_text, option_a, option_b, option_c, option_d, explanation, correct_answer)
 VALUES 
-((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 1, '1', '/audio/part1/q1.mp3', '/images/part1/q1.jpg', 'A'),
-((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 2, '1', '/audio/part1/q2.mp3', '/images/part1/q2.jpg', 'B'),
-((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 3, '1', '/audio/part1/q3.mp3', '/images/part1/q3.jpg', 'C'),
-((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 4, '1', '/audio/part1/q4.mp3', '/images/part1/q4.jpg', 'A'),
-((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 5, '1', '/audio/part1/q5.mp3', '/images/part1/q5.jpg', 'D'),
-((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 6, '1', '/audio/part1/q6.mp3', '/images/part1/q6.jpg', 'B');
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 1, '1', '/audio/part1/q1.mp3', '/images/part1/q1.jpg', 
+'Look at the picture. What is happening?', 
+'People are having a meeting', 'A woman is typing', 'A man is driving', 'Two people are talking',
+'The image shows people in a business meeting setting', 'A'),
+
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 2, '1', '/audio/part1/q2.mp3', '/images/part1/q2.jpg',
+'Look at the picture. Where is this place?',
+'In an office', 'At a restaurant', 'In a park', 'At a store',
+'The image shows the interior of a modern restaurant', 'B'),
+
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 3, '1', '/audio/part1/q3.mp3', '/images/part1/q3.jpg',
+'Look at the picture. What is the woman doing?',
+'Reading a book', 'Writing a report', 'Using a computer', 'Making a phone call',
+'The image shows a woman working on a computer in an office setting', 'C'),
+
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 4, '1', '/audio/part1/q4.mp3', '/images/part1/q4.jpg',
+'Look at the picture. What is on the desk?',
+'A laptop and documents', 'A phone and coffee', 'Books and papers', 'A printer and scanner',
+'The image shows a laptop and various documents on a desk', 'A'),
+
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 5, '1', '/audio/part1/q5.mp3', '/images/part1/q5.jpg',
+'Look at the picture. What time of day is it?',
+'Morning', 'Afternoon', 'Evening', 'Night',
+'The image shows an evening city scene with lights', 'D'),
+
+((SELECT id FROM Exam_Section WHERE exam_code = 'TOEIC2024_P1'), 6, '1', '/audio/part1/q6.mp3', '/images/part1/q6.jpg',
+'Look at the picture. What is the weather like?',
+'Sunny', 'Rainy', 'Cloudy', 'Snowy',
+'The image shows a rainy day with people using umbrellas', 'B');
 
 -- Part 2: Question-Response (25 câu hỏi)
 INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)

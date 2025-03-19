@@ -30,7 +30,7 @@ class TeacherController extends Controller
                 ]);
     
         // Phân trang dữ liệu
-        $teachers = $query->paginate($pageSize, ['id', 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
+        $teachers = $query->paginate($pageSize, ['id','full_name', 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
     
         // Chuyển đổi dữ liệu theo format mong muốn
         $formattedTeachers = $teachers->map(function ($teacher) {

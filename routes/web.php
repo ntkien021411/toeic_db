@@ -66,6 +66,7 @@ Route::prefix('api')->group(function () {
 
         //CLASS Thêm lớp học 
         Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
+        Route::put('/class/edit-class/{id}', [ClassController::class, 'edit']);  // Tạo lớp học
         //Danh sách lớp học 
         Route::get('/classes/list', [ClassController::class, 'listClass']); 
         //Chi tiết lớp học

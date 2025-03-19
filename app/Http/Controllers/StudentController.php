@@ -25,13 +25,13 @@ class StudentController extends Controller
             ->with('account:id,email'); // Chỉ lấy email từ bảng account để tối ưu hóa
 
         // Phân trang dữ liệu
-        $students = $query->paginate($pageSize, ['id', 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
+        $students = $query->paginate($pageSize, ['id', 'full_name','first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
 
         // Chuyển đổi dữ liệu theo format mong muốn
         $formattedStudents = $students->map(function ($student) {
             return [
                 'id' => $student->id,
-                'name' => "{$student->first_name} {$student->last_name}",
+                'name' => $student->full_name,
                 'dob' => $student->birth_date,
                 'gender' => $student->gender,
                 'phone' => $student->phone,
