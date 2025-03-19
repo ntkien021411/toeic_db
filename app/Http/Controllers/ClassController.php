@@ -12,27 +12,6 @@ use Illuminate\Support\Facades\Validator;
 
 class ClassController extends Controller
 {
-    public function show($id)
-    {
-        $class = Classes::where('id', $id)->where('is_deleted', false)->first();
-
-        if (!$class) {
-            return response()->json([
-                'message' => 'Lớp học không tồn tại',
-                'code' => 404,
-                'data' => null,
-               'meta' => null
-            ], 404);
-        }
-
-        return response()->json([
-            'message' => 'Thông tin lớp học được lấy thành công.',
-            'code' => 200,
-            'data' => $class,
-            'meta' => null
-        ], 200);
-    }
-
     public function store(Request $request)
     {
        // Kiểm tra xem teacher_id có phải là giáo viên không
@@ -197,55 +176,6 @@ class ClassController extends Controller
         ], 200);
     }
 
-
-    public function update(Request $request, $id)
-    {
-        $class = Classes::where('id', $id)->where('is_deleted', false)->first();
-
-        if (!$class) {
-            return response()->json([
-                'message' => 'Lớp học không tồn tại',
-                'code' => 404,
-                'data' => null,
-                'meta' => null
-            ], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'class_code'   => 'sometimes|string|unique:class,class_code,' . $id,
-            'class_name'   => 'sometimes|string',
-            'start_date'   => 'sometimes|date',
-            'end_date'     => 'sometimes|date|after_or_equal:start_date',
-            'is_deleted'   => 'sometimes|boolean'
-        ], [
-            'class_code.unique'    => 'Mã lớp học đã tồn tại.',
-            'end_date.after_or_equal' => 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Dữ liệu nhập vào không hợp lệ',
-                'code' => 400,
-                'data' => null,
-                'meta' => null,
-                'message_array' =>  $validator->errors()
-            ], 400);
-        }
-
-        $validatedData = $validator->validated();
-
-        if ($request->has('is_deleted') && $request->is_deleted == true) {
-            $validatedData['deleted_at'] = now();
-            $validatedData['is_deleted'] = true;
-        }
-
-        $class->update($validatedData);
-
-        return response()->json([
-            'message' => 'Lớp học đã được cập nhật thành công.',
-            'data' => $class
-        ]);
-    }
 
     public function edit(Request $request, $id)
     {

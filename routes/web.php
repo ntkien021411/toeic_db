@@ -51,12 +51,12 @@ Route::prefix('api')->group(function () {
         //TEACHER Xem danh sách giáo viên 
         Route::get('/teachers/list', [TeacherController::class, 'listTeacher']); 
         Route::post('/teachers/add-teacher', [TeacherController::class, 'createUser']); // Thêm giáo viên
-        Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'editUser']); // Thêm giáo viên
+        Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'editUser']); // Sửa giáo viên
         Route::delete('/teachers/delete', [TeacherController::class, 'delete']); 
         //STUDENT Xem danh sách học viên
         Route::get('/students/list', [StudentController::class, 'listStudent']);
         Route::post('/students/add-student', [StudentController::class, 'createUser']); // Thêm học viên
-        Route::put('/students/edit-student/{id}', [StudentController::class, 'editUser']); // Thêm học viên
+        Route::put('/students/edit-student/{id}', [StudentController::class, 'editUser']); // Sửa học viên
         Route::delete('/students/delete', [StudentController::class, 'delete']); 
 
         //ACCOUNT Xem danh sách tài khoản
@@ -66,7 +66,7 @@ Route::prefix('api')->group(function () {
 
         //CLASS Thêm lớp học 
         Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
-        Route::put('/class/edit-class/{id}', [ClassController::class, 'edit']);  // Tạo lớp học
+        Route::put('/class/edit-class/{id}', [ClassController::class, 'edit']);  // Sửa lớp học
         //Danh sách lớp học 
         Route::get('/classes/list', [ClassController::class, 'listClass']); 
         //Chi tiết lớp học

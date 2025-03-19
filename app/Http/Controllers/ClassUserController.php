@@ -99,8 +99,10 @@ class ClassUserController extends Controller
 
         // Lấy danh sách lớp học của học viên có phân trang
             $classes = ClassUser::where('user_id', $user_id)
-            ->whereNull('deleted_at') // Bỏ qua bản ghi bị xóa mềm
-            ->with('class') // Eager load thông tin class
+            ->where('is_deleted', false)
+            ->with(['class' => function($query) {
+                $query->where('is_deleted', false);
+            }])
             ->paginate($request->input('per_page', 2));
 
             // Map lại để chỉ lấy thông tin class
@@ -151,12 +153,14 @@ class ClassUserController extends Controller
 
         // Lấy danh sách học viên của lớp có phân trang
         $students = ClassUser::where('class_id', $class_id)
-            ->whereNull('deleted_at')
+            ->where('is_deleted', false)
             ->with(['user' => function($query) {
                 $query->select('id', 'first_name', 'last_name', 'full_name', 'birth_date', 'gender', 'phone', 'address', 'account_id')
                       ->where('role', 'STUDENT')
+                      ->where('is_deleted', false)
                       ->with(['account' => function($q) {
-                          $q->select('id', 'email');
+                          $q->select('id', 'email')
+                            ->where('is_deleted', false);
                       }]);
             }])
             ->paginate($pageSize, ['*'], 'page', $pageNumber);
