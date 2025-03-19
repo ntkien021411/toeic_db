@@ -112,8 +112,8 @@ class ClassController extends Controller
                 'class_type'         => $class->class_type,
                 'start_date'         => $class->start_date,
                 'end_date'           => $class->end_date,
-                'start_time'         => $class->start_time,
-                'end_time'           => $class->end_time,
+                'start_time'         => date('H:i', strtotime($class->start_time)),
+                'end_time'           => date('H:i', strtotime($class->end_time)),
                 'days'               => explode(',', $class->days), // Chuyển chuỗi thành mảng ["dd/mm/yyyy", "dd/mm/yyyy"]
                 'number_of_students' => $class->number_of_students,
                 'teacher'            => $class->teacher_id
@@ -155,8 +155,8 @@ class ClassController extends Controller
                 'class_type' => $class->class_type,
                 'start_date' => $class->start_date,
                 'end_date' => $class->end_date,
-                'start_time' => $class->start_time,
-                'end_time' => $class->end_time,
+                'start_time' => date('H:i', strtotime($class->start_time)),
+                'end_time' => date('H:i', strtotime($class->end_time)),
                 'days' => explode(',', $class->days),
                 'number_of_students' => $class->student_count,
                 'teacher' => optional($class->teacher)->full_name
@@ -265,8 +265,8 @@ class ClassController extends Controller
                     'class_type'         => $class->class_type,
                     'start_date'         => $class->start_date,
                     'end_date'           => $class->end_date,
-                    'start_time'         => $class->start_time,
-                    'end_time'           => $class->end_time,
+                    'start_time'         => date('H:i', strtotime($class->start_time)),
+                    'end_time'           => date('H:i', strtotime($class->end_time)),
                     'days'               => explode(',', $class->days),
                     'number_of_students' => $class->student_count,
                     'teacher'            => $class->teacher_id
