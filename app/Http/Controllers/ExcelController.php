@@ -258,11 +258,12 @@ class ExcelController extends Controller
                     $question = Question::create([
                         'exam_section_id' => $exam_id,
                         'question_number' => $questionData['question_number'],
-                        'question' => $questionData['question'],
-                        'answer_a' => $questionData['answer_a'],
-                        'answer_b' => $questionData['answer_b'],
-                        'answer_c' => $questionData['answer_c'],
-                        'answer_d' => $questionData['answer_d'],
+                        'part_number' =>  $examSection->part_number,
+                        'question_text' => $questionData['question'],
+                        'option_a' => $questionData['answer_a'],
+                        'option_b' => $questionData['answer_b'],
+                        'option_c' => $questionData['answer_c'],
+                        'option_d' => $questionData['answer_d'],
                         'correct_answer' => strtoupper($questionData['correct_answer']),
                         'explanation' => $questionData['explanation'],
                         'audio_url' => $audioUrl,
@@ -298,5 +299,81 @@ class ExcelController extends Controller
         }
     }   
             
+    /**
+     * Lấy danh sách câu hỏi theo exam_section_id
+     */
+    public function getQuestionsByExamSection($exam_id)
+    {
+        try {
+            // Validate exam section exists
+            $examSection = ExamSection::where('id', $exam_id)
+                ->where('is_deleted', false)
+                ->select([
+                    'id',
+                    'exam_code',
+                    'exam_name',
+                    'section_name',
+                    'part_number',
+                    'question_count',
+                    'duration',
+                    'max_score'
+                ])
+                ->first();
 
+            if (!$examSection) {
+                return response()->json([
+                    'message' => 'Không tìm thấy phần thi.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
+
+            // Lấy danh sách câu hỏi theo exam_section_id
+            $questions = Question::where('exam_section_id', $exam_id)
+                ->select([
+                    'id',
+                    'exam_section_id',
+                    'question_number',
+                    'part_number',
+                    'question_text',
+                    'option_a',
+                    'option_b',
+                    'option_c',
+                    'option_d',
+                    'correct_answer',
+                    'explanation',
+                    'audio_url',
+                    'image_url'
+                ])
+                ->orderBy('question_number', 'asc')
+                ->get();
+
+            if ($questions->isEmpty()) {
+                return response()->json([
+                    'message' => 'Không tìm thấy câu hỏi nào cho phần thi này.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Lấy danh sách câu hỏi thành công.',
+                'code' => 200,
+                'data' => [
+                    'exam_section' => $examSection,
+                    'questions' => $questions
+                ],
+                'meta' => [
+                    'total_questions' => $questions->count()
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi lấy danh sách câu hỏi: ' . $e->getMessage(),
+                'code' => 500,
+                'data' => null
+            ], 500);
+        }
+    }
 }

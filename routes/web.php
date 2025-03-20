@@ -81,10 +81,12 @@ Route::prefix('api')->group(function () {
         Route::post('/create-exam-section', [ExamSectionController::class, 'createExamSection']);
         //Xem danh sách bài thi toeic theo từng part và exam_code 
         Route::get('/list-exam-section/{exam_code}', [ExamSectionController::class, 'checkExamParts']);
-        //Import bài thi toeic từ file excel
+        //Import bài thi toeic từ file excel    
         Route::post('/read-excel', [ExcelController::class, 'readExcel']);
         //Tạo câu hỏi cho bài thi toeic
         Route::post('/create-question/{exam_id}', [ExcelController::class, 'importQuestions']);
+        //Xem danh sách câu hỏi của bài thi toeic
+        Route::get('/exam-sections/{exam_id}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
 
         
 
