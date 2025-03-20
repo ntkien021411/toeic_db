@@ -81,8 +81,8 @@ CREATE TABLE Exam_Section (
     id INT AUTO_INCREMENT PRIMARY KEY,
     exam_code VARCHAR(50)  NOT NULL,
     exam_name VARCHAR(255)  NULL,
-    section_name ENUM('Listening', 'Reading', 'Full') NOT NULL, 
-    part_number ENUM('1', '2', '3', '4', '5', '6', '7', 'Full') NOT NULL, -- Chuyển từ TINYINT sang ENUM
+    section_name ENUM('Listening', 'Reading') NOT NULL, 
+    part_number ENUM('1', '2', '3', '4', '5', '6', '7') NOT NULL, -- Chuyển từ TINYINT sang ENUM
     question_count INT  NULL CHECK (question_count > 0),
     year INT  NULL CHECK (year > 0),
     duration INT  NULL CHECK (duration > 0),
@@ -582,9 +582,6 @@ INSERT INTO Question (
     'A'
 );
 
--- Thêm Full Test TOEIC
-INSERT INTO Exam_Section (exam_code, exam_name, section_name, part_number, question_count, year, duration, max_score, type, is_Free)
-VALUES ('TOEIC2024_FULL', 'TOEIC Full Test 2024', 'Full', 'Full', 200, 2024, 120, 990, 'Full Test', FALSE);
 
 -- 3. Thêm chứng chỉ cho mỗi giáo viên
 INSERT INTO Diploma (user_id, certificate_name, score, level, issued_by, issue_date, expiry_date)

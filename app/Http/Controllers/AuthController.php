@@ -48,39 +48,49 @@ class AuthController extends Controller
                 'meta' => null
             ], 404);        
         }
+
+        // 4. Kiểm tra active_status
+        if (!$account->active_status) {
+            return response()->json([
+                'message' => 'Tài khoản chưa được kích hoạt',
+                'code' => 403,
+                'data' => null,
+                'meta' => null
+            ], 403);
+        }
+
+        // 5. Tạo Access Token & Refresh Token
+        $accessToken = Str::random(60); // Token ngẫu nhiên
+        $refreshToken = Str::random(60); // Token làm mới
+        $expiredAt = Carbon::now()->addMinutes(30); // Token hết hạn sau 2 phút
+        $refreshExpiredAt = Carbon::now()->addDays(3); // Refresh token hết hạn sau 3 ngày
  
-         // 4. Tạo Access Token & Refresh Token
-         $accessToken = Str::random(60); // Token ngẫu nhiên
-         $refreshToken = Str::random(60); // Token làm mới
-         $expiredAt = Carbon::now()->addMinutes(30); // Token hết hạn sau 2 phút
-         $refreshExpiredAt = Carbon::now()->addDays(3); // Refresh token hết hạn sau 3 ngày
- 
-         // 5. Lưu token vào database
-         Token::updateOrCreate(
-             ['account_id' => $account->id],
-             [
-                 'token' => $accessToken,
-                 'refresh_token' => $refreshToken,
-                 'expired_at' => $expiredAt
-             ]
-         );
-         $userData = User::where('account_id', $account->id)->first();
-         // Kiểm tra nếu $userData là null
-         $account->setAttribute('fullname', $userData->full_name ?? '');
-         
-         // 6. Trả về response chứa token
-         return response()->json([
-            'message' => 'Đăng nhập thành công',
-            'code' => 200,
-            'data' => [
+        // 6. Lưu token vào database
+        Token::updateOrCreate(
+            ['account_id' => $account->id],
+            [
                 'token' => $accessToken,
                 'refresh_token' => $refreshToken,
-                'expires_in' => $expiredAt,
-                'account' => $account,
-                'role' => $userData->role ?? ''
-            ],
-            'meta' => null
-        ], 200);
+                'expired_at' => $expiredAt
+            ]
+        );
+        $userData = User::where('account_id', $account->id)->first();
+        // Kiểm tra nếu $userData là null
+        $account->setAttribute('fullname', $userData->full_name ?? '');
+        
+        // 7. Trả về response chứa token
+        return response()->json([
+           'message' => 'Đăng nhập thành công',
+           'code' => 200,
+           'data' => [
+               'token' => $accessToken,
+               'refresh_token' => $refreshToken,
+               'expires_in' => $expiredAt,
+               'account' => $account,
+               'role' => $userData->role ?? ''
+           ],
+           'meta' => null
+       ], 200);
      }
 
     public function checkAccount(Request $request)
