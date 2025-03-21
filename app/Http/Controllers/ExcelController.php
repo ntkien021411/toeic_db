@@ -30,7 +30,25 @@ class ExcelController extends Controller
         try {
             // Kiểm tra file upload
             $validator = \Validator::make($request->all(), [
-                'file' => 'required|mimes:xlsx,xls|max:2048'
+                'file' => [
+                    'required',
+                    'file',
+                    'mimes:xlsx,xls',
+                    'max:2048',
+                    function ($attribute, $value, $fail) {
+                        $mimeType = $value->getMimeType();
+                        $allowedMimes = [
+                            'application/vnd.ms-excel',
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            'application/octet-stream',
+                            'application/zip'
+                        ];
+                        
+                        if (!in_array($mimeType, $allowedMimes)) {
+                            $fail('File phải là định dạng Excel (.xlsx hoặc .xls)');
+                        }
+                    }
+                ]
             ], [
                 'file.required' => 'Vui lòng chọn file Excel để tải lên.',
                 'file.mimes' => 'File phải có định dạng xlsx hoặc xls.',

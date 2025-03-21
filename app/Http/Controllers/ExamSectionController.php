@@ -362,11 +362,27 @@ class ExamSectionController extends Controller
         }
     }
 
-    public function getQuestionsByExamSection($exam_id)
+    public function getQuestionsByExamSection(Request $request)
     {
         try {
+            // Validate input
+            $validator = Validator::make($request->all(), [
+                'exam_code' => 'required|string',
+                'part_number' => 'required|integer|min:1|max:7'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Dữ liệu đầu vào không hợp lệ.',
+                    'code' => 400,
+                    'data' => null,
+                    'errors' => $validator->errors()
+                ], 400);
+            }
+
             // Validate exam section exists
-            $examSection = ExamSection::where('id', $exam_id)
+            $examSection = ExamSection::where('exam_code', $request->exam_code)
+                ->where('part_number', $request->part_number)
                 ->where('is_deleted', false)
                 ->select([
                     'id',
@@ -389,7 +405,7 @@ class ExamSectionController extends Controller
             }
 
             // Lấy danh sách câu hỏi theo exam_section_id
-            $questions = Question::where('exam_section_id', $exam_id)
+            $questions = Question::where('exam_section_id', $examSection->id)
                 ->select([
                     'id',
                     'exam_section_id',
@@ -416,26 +432,74 @@ class ExamSectionController extends Controller
                 ], 404);
             }
 
-            return response()->json([
+            // Xử lý nhóm câu hỏi theo part_number
+            $groupedQuestions = [];
+            $questionsArray = $questions->toArray();
+
+            switch ($request->part_number) {
+                case 1:
+                case 5:
+                    // Mỗi câu hỏi là một nhóm riêng
+                    foreach ($questionsArray as $question) {
+                        $groupedQuestions[] = [$question];
+                    }
+                    break;
+
+                case 2:
+                case 3:
+                case 4:
+                    // Nhóm 3 câu một
+                    for ($i = 0; $i < count($questionsArray); $i += 3) {
+                        $groupedQuestions[] = array_slice($questionsArray, $i, 3);
+                    }
+                    break;
+
+                case 6:
+                    // Nhóm 4 câu một
+                    for ($i = 0; $i < count($questionsArray); $i += 4) {
+                        $groupedQuestions[] = array_slice($questionsArray, $i, 4);
+                    }
+                    break;
+
+                case 7:
+                    // Xử lý đặc biệt cho part 7 với pattern tăng dần
+                    $currentIndex = 0;
+                    $pattern = [
+                        2, 2, 2,     // 6 câu (3 nhóm 2)
+                        3, 3, 3,     // 9 câu (3 nhóm 3)
+                        4, 4, 4,     // 12 câu (3 nhóm 4)
+                        4, 4, 4,     // 12 câu (3 nhóm 4)
+                        5, 5, 5      // 15 câu (3 nhóm 5)
+                    ];              // Tổng: 54 câu
+                    $patternIndex = 0;
+                    
+                    while ($currentIndex < count($questionsArray)) {
+                        $groupSize = $pattern[$patternIndex % count($pattern)];
+                        $remainingQuestions = count($questionsArray) - $currentIndex;
+                        
+                        if ($groupSize > $remainingQuestions) {
+                            $groupSize = $remainingQuestions;
+                        }
+                        
+                        $groupedQuestions[] = array_slice($questionsArray, $currentIndex, $groupSize);
+                        $currentIndex += $groupSize;
+                        $patternIndex++;
+                    }
+                    break;
+            }
+
+        return response()->json([
                 'message' => 'Lấy danh sách câu hỏi thành công.',
                 'code' => 200,
                 'data' => [
-                    'exam_section' => [
-                        'id' => $examSection->id,
-                        'exam_code' => $examSection->exam_code,
-                        'exam_name' => $examSection->exam_name,
-                        'section_name' => $examSection->section_name,
-                        'part_number' => $examSection->part_number,
-                        'question_count' => $examSection->question_count,
-                        'duration' => $examSection->duration,
-                        'max_score' => $examSection->max_score
-                    ],
-                    'questions' => $questions
+                    'exam_section' => $examSection,
+                    'questions' => $groupedQuestions
                 ],
                 'meta' => [
-                    'total_questions' => $questions->count()
+                    'total_questions' => $questions->count(),
+                    'total_groups' => count($groupedQuestions)
                 ]
-            ], 200);
+        ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -445,7 +509,7 @@ class ExamSectionController extends Controller
             ], 500);
         }
     }
-
+    
 }
 
 
