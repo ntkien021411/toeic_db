@@ -151,8 +151,8 @@ class ExcelController extends Controller
                         $question = $questions[$i];
                         $groupedQuestions[] = [
                             'questions' => $question,
-                            'audio_url' => $question->audio_url,
-                            'image_url' => $question->image_url
+                            // 'audio_url' => $question->audio_url,
+                            // 'image_url' => $question->image_url
                         ];
                     }
                     break;
