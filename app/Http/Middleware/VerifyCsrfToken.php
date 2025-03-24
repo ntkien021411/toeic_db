@@ -8,6 +8,7 @@ class VerifyCsrfToken extends Middleware
 {
     
     protected $except = [
+        'create-question/*',
         'api/*', // Bỏ qua CSRF(lỗi 419) cho tất cả API
         'upload'
     ];

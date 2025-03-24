@@ -362,11 +362,17 @@ class ExamSectionController extends Controller
         }
     }
 
-    public function getQuestionsByExamSection(Request $request)
+    public function getQuestionsByExamSection($exam_code, $part_number)
     {
         try {
+            // Parse part_number to integer
+            $part_number = (int) $part_number;
+
             // Validate input
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make([
+                'exam_code' => $exam_code,
+                'part_number' => $part_number
+            ], [
                 'exam_code' => 'required|string',
                 'part_number' => 'required|integer|min:1|max:7'
             ]);
@@ -381,8 +387,8 @@ class ExamSectionController extends Controller
             }
 
             // Validate exam section exists
-            $examSection = ExamSection::where('exam_code', $request->exam_code)
-                ->where('part_number', $request->part_number)
+            $examSection = ExamSection::where('exam_code', $exam_code)
+                ->where('part_number', $part_number)
                 ->where('is_deleted', false)
                 ->select([
                     'id',
@@ -436,7 +442,7 @@ class ExamSectionController extends Controller
             $groupedQuestions = [];
             $questionsArray = $questions->toArray();
 
-            switch ($request->part_number) {
+            switch ($part_number) {
                 case 1:
                 case 5:
                     // Mỗi câu hỏi là một nhóm riêng
@@ -510,6 +516,110 @@ class ExamSectionController extends Controller
         }
     }
     
+    public function listExamSections($exam_code)
+    {
+        try {
+            // Validate exam_code
+            if (empty($exam_code)) {
+                return response()->json([
+                    'message' => 'Mã bài thi không được để trống.',
+                    'code' => 400,
+                    'data' => null
+                ], 400);
+            }
+
+            // Lấy thông tin chung của bài thi
+            $examInfo = ExamSection::where('exam_code', $exam_code)
+                ->where('is_deleted', false)
+                ->select('exam_name', 'year', 'type', 'is_Free')
+                ->first();
+
+            if (!$examInfo) {
+                return response()->json([
+                    'message' => 'Không tìm thấy bài thi với mã này.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
+
+            // Lấy danh sách các phần thi
+            $examSections = ExamSection::where('exam_code', $exam_code)
+                ->where('is_deleted', false)
+                ->select([
+                    'id',
+                    'exam_code',
+                    'exam_name',
+                    'section_name',
+                    'part_number',
+                    'question_count',
+                    'duration',
+                    'max_score',
+                    'type',
+                    'year',
+                    'is_Free'
+                ])
+                ->orderBy('part_number', 'asc')
+                ->get();
+
+            // Phân loại theo section (Listening/Reading)
+            $sections = [
+                'Listening' => [],
+                'Reading' => []
+            ];
+
+            foreach ($examSections as $section) {
+                if ($section->section_name === 'Listening') {
+                    $sections['Listening'][] = [
+                        'id' => $section->id,
+                        'part_number' => $section->part_number,
+                        'question_count' => $section->question_count,
+                        'duration' => $section->duration,
+                        'max_score' => $section->max_score,
+                        'is_Free' => $section->is_Free
+                    ];
+                } else {
+                    $sections['Reading'][] = [
+                        'id' => $section->id,
+                        'part_number' => $section->part_number,
+                        'question_count' => $section->question_count,
+                        'duration' => $section->duration,
+                        'max_score' => $section->max_score,
+                        'is_Free' => $section->is_Free
+                    ];
+                }
+            }
+
+            return response()->json([
+                'message' => 'Lấy danh sách phần thi thành công.',
+                'code' => 200,
+                'data' => [
+                    'exam_info' => [
+                        'exam_code' => $exam_code,
+                        'exam_name' => $examInfo->exam_name,
+                        'year' => $examInfo->year,
+                        'type' => $examInfo->type,
+                        'is_Free' => $examInfo->is_Free,
+                        'total_duration' => 120,
+                        'total_questions' => 200,
+                        'total_max_score' => 990
+                    ],
+                    'sections' => $sections
+                ],
+                'meta' => [
+                    'total_sections' => count($examSections),
+                    'listening_parts' => count($sections['Listening']),
+                    'reading_parts' => count($sections['Reading'])
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi lấy danh sách phần thi: ' . $e->getMessage(),
+                'code' => 500,
+                'data' => null
+            ], 500);
+        }
+    }
 }
 
 
