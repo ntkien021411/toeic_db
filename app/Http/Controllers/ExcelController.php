@@ -246,48 +246,49 @@ class ExcelController extends Controller
         }
     }
 
-    private function uploadToCloudinary($url, $type = 'image')
-    {
-        try {
-            // Nếu URL rỗng hoặc null, trả về chuỗi rỗng
-            if (empty($url) || $url === null) {
-                return '';
-            }
+    //CLOSING 
+    // private function uploadToCloudinary($url, $type = 'image')
+    // {
+    //     try {
+    //         // Nếu URL rỗng hoặc null, trả về chuỗi rỗng
+    //         if (empty($url) || $url === null) {
+    //             return '';
+    //         }
 
-            // Nếu URL đã là Cloudinary URL, trả về chuỗi rỗng
-            if (strpos($url, 'res.cloudinary.com') !== false) {
-                return '';
-            }
+    //         // Nếu URL đã là Cloudinary URL, trả về chuỗi rỗng
+    //         if (strpos($url, 'res.cloudinary.com') !== false) {
+    //             return '';
+    //         }
 
-            // Thêm header cho base64 nếu chưa có
-            if (base64_decode($url, true)) {
-                // Xác định mime type dựa vào type
-                $mimeType = $type === 'image' ? 'image/png' : 'audio/mpeg';
-                // Thêm header nếu chuỗi chưa có
-                if (strpos($url, 'data:') !== 0) {
-                    $url = 'data:' . $mimeType . ';base64,' . $url;
-                }
-            }
+    //         // Thêm header cho base64 nếu chưa có
+    //         if (base64_decode($url, true)) {
+    //             // Xác định mime type dựa vào type
+    //             $mimeType = $type === 'image' ? 'image/png' : 'audio/mpeg';
+    //             // Thêm header nếu chuỗi chưa có
+    //             if (strpos($url, 'data:') !== 0) {
+    //                 $url = 'data:' . $mimeType . ';base64,' . $url;
+    //             }
+    //         }
 
-            // Kiểm tra và upload nếu là base64
-            if (strpos($url, 'data:') === 0) {
-                // Upload lên Cloudinary
-                $result = Cloudinary::upload($url, [
-                    'resource_type' => $type === 'image' ? 'image' : 'video',
-                    'folder' => $type === 'image' ? 'images' : 'audio'
-                ]);
+    //         // Kiểm tra và upload nếu là base64
+    //         if (strpos($url, 'data:') === 0) {
+    //             // Upload lên Cloudinary
+    //             $result = Cloudinary::upload($url, [
+    //                 'resource_type' => $type === 'image' ? 'image' : 'video',
+    //                 'folder' => $type === 'image' ? 'images' : 'audio'
+    //             ]);
 
-                // Lấy secure URL từ kết quả upload
-                return $result->getSecurePath();
-            }
+    //             // Lấy secure URL từ kết quả upload
+    //             return $result->getSecurePath();
+    //         }
 
-            return '';
+    //         return '';
 
-        } catch (\Exception $e) {
-            \Log::error('Cloudinary upload error: ' . $e->getMessage());
-            return '';
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         \Log::error('Cloudinary upload error: ' . $e->getMessage());
+    //         return '';
+    //     }
+    // }
 
     public function importQuestions(Request $request, $exam_code, $part_number)
     {
@@ -357,38 +358,9 @@ class ExcelController extends Controller
                 ], 400);
             }
 
-            // Mảng để lưu thông tin về các file đã upload
-            $uploadedFiles = [];
             $questionsToInsert = [];
 
             foreach ($data['data']['groups'] as $group) {
-                // Initialize audio_url and image_url as empty strings
-                $audio_url = '';
-                $image_url = '';
-
-                if (in_array($part_number, [1, 2, 5])) {
-                    // Part 1, 2, 5: Upload audio và image từ question object
-                    if (isset($group['questions'])) {
-                        $questionData = $group['questions'];
-                        if (isset($questionData['audio_url']) && $questionData['audio_url'] !== '' && $questionData['audio_url'] !== null) {
-                            $audio_url = $this->uploadToCloudinary($questionData['audio_url'], 'audio');
-                        }
-
-                        if (isset($questionData['image_url']) && $questionData['image_url'] !== '' && $questionData['image_url'] !== null) {
-                            $image_url = $this->uploadToCloudinary($questionData['image_url'], 'image');
-                        }
-                    }
-                } else {
-                    // Part 3,4,6,7: Upload audio và image từ group
-                    if (isset($group['audio_url']) && $group['audio_url'] !== '' && $group['audio_url'] !== null) {
-                        $audio_url = $this->uploadToCloudinary($group['audio_url'], 'audio');
-                    }
-
-                    if (isset($group['image_url']) && $group['image_url'] !== '' && $group['image_url'] !== null) {
-                        $image_url = $this->uploadToCloudinary($group['image_url'], 'image');
-                    }
-                }
-
                 if (isset($group['questions'])) {
                     if (in_array($part_number, [1, 2, 5])) {
                         // Part 1, 2, 5: questions là một object
@@ -404,8 +376,8 @@ class ExcelController extends Controller
                             'option_d' => $questionData['option_d'] ?? null,
                             'correct_answer' => isset($questionData['correct_answer']) ? strtoupper($questionData['correct_answer']) : null,
                             'explanation' => $questionData['explanation'] ?? null,
-                            'audio_url' => $audio_url,
-                            'image_url' => $image_url
+                            'audio_url' => $questionData['audio_url'] ?? null,
+                            'image_url' => $questionData['image_url'] ?? null
                         ];
                     } else {
                         // Part 3,4,6,7: questions là mảng chứa nhiều object
@@ -421,8 +393,8 @@ class ExcelController extends Controller
                                 'option_d' => $questionData['option_d'] ?? null,
                                 'correct_answer' => isset($questionData['correct_answer']) ? strtoupper($questionData['correct_answer']) : null,
                                 'explanation' => $questionData['explanation'] ?? null,
-                                'audio_url' => $audio_url,
-                                'image_url' => $image_url
+                                'audio_url' => $group['audio_url'] ?? null,
+                                'image_url' => $group['image_url'] ?? null
                             ];
                         }
                     }
@@ -430,7 +402,7 @@ class ExcelController extends Controller
             }
 
             // Insert tất cả câu hỏi một lần
-            $insertedQuestions = Question::insert($questionsToInsert);
+            Question::insert($questionsToInsert);
 
             // Lấy lại danh sách câu hỏi đã insert để trả về
             $questions = Question::where('exam_section_id', $examSection->id)
@@ -462,8 +434,7 @@ class ExcelController extends Controller
                 'data' => [
                     'exam_section_id' => $examSection->id,
                     'questions_count' => count($questions),
-                    'questions' => $questions,
-                    'uploaded_files' => $uploadedFiles
+                    'questions' => $questions
                 ]
             ], 201);
 
@@ -476,6 +447,95 @@ class ExcelController extends Controller
             ], 500);
         }
     }   
-            
 
+    private function isValidBase64($base64)
+    {
+        // Kiểm tra nếu thiếu "data:image/...;base64," hoặc "data:audio/...;base64,"
+        if (!preg_match('/^data:(image\/(png|jpeg|gif|jpg)|audio\/(mpeg|wav|ogg));base64,/', $base64)) {
+            return false;
+        }
+
+        // Lấy phần dữ liệu thực tế
+        $data = substr($base64, strpos($base64, ',') + 1);
+
+        // Kiểm tra xem phần dữ liệu có thực sự là Base64 không
+        return base64_decode($data, true) !== false;
+    }
+
+    public function uploadBase64Files(Request $request)
+    {
+        try {
+            // Validate request
+            $validator = Validator::make($request->all(), [
+                'audio_base64' => 'nullable|string',
+                'image_base64' => 'nullable|string'
+            ], [
+                'audio_base64.string' => 'Audio base64 phải là chuỗi.',
+                'image_base64.string' => 'Image base64 phải là chuỗi.'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Dữ liệu đầu vào không hợp lệ.',
+                    'code' => 400,
+                    'data' => null,
+                    'errors' => $validator->errors()
+                ], 400);
+            }
+
+            $response = [
+                'audio_url' => '',
+                'image_url' => ''
+            ];
+
+            // Handle audio upload
+            if ($request->has('audio_base64') && !empty($request->audio_base64)) {
+                $audioBase64 = $request->audio_base64;
+                
+                // Add data URI if not present
+                if (strpos($audioBase64, 'data:') !== 0) {
+                    $audioBase64 = 'data:audio/mpeg;base64,' . $audioBase64;
+                }
+
+                if ($this->isValidBase64($audioBase64)) {
+                    $result = Cloudinary::upload($audioBase64, [
+                        'resource_type' => 'video',
+                        'folder' => 'audio'
+                    ]);
+                    $response['audio_url'] = $result->getSecurePath();
+                }
+            }
+
+            // Handle image upload
+            if ($request->has('image_base64') && !empty($request->image_base64)) {
+                $imageBase64 = $request->image_base64;
+                
+                // Add data URI if not present
+                if (strpos($imageBase64, 'data:') !== 0) {
+                    $imageBase64 = 'data:image/png;base64,' . $imageBase64;
+                }
+
+                if ($this->isValidBase64($imageBase64)) {
+                    $result = Cloudinary::upload($imageBase64, [
+                        'resource_type' => 'image',
+                        'folder' => 'images'
+                    ]);
+                    $response['image_url'] = $result->getSecurePath();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Upload files thành công.',
+                'code' => 200,
+                'data' => $response
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi upload files: ' . $e->getMessage(),
+                'code' => 500,
+                'data' => null
+            ], 500);
+        }
+    }
 }

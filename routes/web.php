@@ -26,13 +26,14 @@ use App\Http\Controllers\ExcelController;
 Route::prefix('api')->group(function () {
 
     Route::middleware(['checkToken'])->group(function () {
-        Route::post('/upload', function (Request $request) {
-            return response()->json($request->uploaded_urls);
-        })->middleware('upload.image');
+        // Route::post('/upload', function (Request $request) {
+        //     return response()->json($request->uploaded_urls);
+        // })->middleware('upload.image');
 
 
         //EXAMSECTION Bài luyện thi toeic 
         Route::get('/tests-full/list', [ExamSectionController::class, 'listExam']); // Xem danh sách bài Luyện thi
+        Route::post('/upload-base64', [ExcelController::class, 'uploadBase64Files']);
     });
 
    
@@ -140,5 +141,3 @@ Route::prefix('api')->group(function () {
 Route::get('/', function () {
     return view('welcome');
 });
-
-Route::post('/create-question/{exam_code}/{part_number}', [ExcelController::class, 'importQuestions']);
