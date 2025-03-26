@@ -38,6 +38,15 @@ Route::prefix('api')->group(function () {
          Route::get('/exam-sections/all', [ExamSectionController::class, 'getAllExamSections']);  // API mới
          //Xem danh sách câu hỏi của bài thi toeic theo từng bài 
          Route::get('/exam-sections/{examCode}/questions', [ExamSectionController::class, 'getQuestionsByExamCode']);  //
+
+        //Xem danh sách bài thi toeic theo từng part và exam_code 
+        Route::get('/list-exam-section/{exam_code}', [ExamSectionController::class, 'checkExamParts']);
+
+        //Xem danh sách câu hỏi của bài thi toeic theo từng bài và từng part 
+        Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
+        // Exam Results
+        Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
+
          
         
         Route::post('/upload-base64', [ExcelController::class, 'uploadBase64Files']);
@@ -87,16 +96,11 @@ Route::prefix('api')->group(function () {
 
         //Tạo bài thi toeic 
         Route::post('/create-exam-section', [ExamSectionController::class, 'createExamSection']);
-        //Xem danh sách bài thi toeic theo từng part và exam_code 
-        Route::get('/list-exam-section/{exam_code}', [ExamSectionController::class, 'checkExamParts']);
         //Import câu hỏi bài thi toeic từ file excel    
         Route::post('/read-excel/{part_number}', [ExcelController::class, 'readExcel']);
         //Tạo câu hỏi cho bài thi toeic
         Route::post('/create-question/{exam_code}/{part_number}', [ExcelController::class, 'importQuestions']);
-        //Xem danh sách câu hỏi của bài thi toeic theo từng bài và từng part 
-        Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
-        // Exam Results
-        Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
+       
             
 
 
