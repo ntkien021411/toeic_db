@@ -33,6 +33,7 @@ Route::prefix('api')->group(function () {
 
         //EXAMSECTION Bài luyện thi toeic 
         Route::get('/tests-full/list', [ExamSectionController::class, 'listExam']); // Xem danh sách bài Luyện thi
+        
         Route::post('/upload-base64', [ExcelController::class, 'uploadBase64Files']);
     });
 
@@ -86,10 +87,16 @@ Route::prefix('api')->group(function () {
         Route::post('/read-excel/{part_number}', [ExcelController::class, 'readExcel']);
         //Tạo câu hỏi cho bài thi toeic
         Route::post('/create-question/{exam_code}/{part_number}', [ExcelController::class, 'importQuestions']);
-        //Xem danh sách câu hỏi của bài thi toeic
+        //Xem danh sách câu hỏi của bài thi toeic theo từng bài và từng part 
         Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
-
+        //Xem danh sách tất cả bài thi toeic
+        Route::get('/exam-sections/all', [ExamSectionController::class, 'getAllExamSections']);  // API mới
+        //Xem danh sách câu hỏi của bài thi toeic theo từng bài 
+        Route::get('/exam-sections/{examCode}/questions', [ExamSectionController::class, 'getQuestionsByExamCode']);  //
         
+        // Exam Results
+        Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
+            
 
 
         //Base Logic 

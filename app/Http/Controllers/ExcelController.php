@@ -465,13 +465,18 @@ class ExcelController extends Controller
     public function uploadBase64Files(Request $request)
     {
         try {
+            // Set execution time limit
+            set_time_limit(300); // 5 minutes
+
             // Validate request
             $validator = Validator::make($request->all(), [
-                'audio_base64' => 'nullable|string',
-                'image_base64' => 'nullable|string'
+                'audio_base64' => 'nullable|string|max:10485760', // 10MB max
+                'image_base64' => 'nullable|string|max:10485760'  // 10MB max
             ], [
                 'audio_base64.string' => 'Audio base64 phải là chuỗi.',
-                'image_base64.string' => 'Image base64 phải là chuỗi.'
+                'image_base64.string' => 'Image base64 phải là chuỗi.',
+                'audio_base64.max' => 'File audio không được vượt quá 10MB.',
+                'image_base64.max' => 'File ảnh không được vượt quá 10MB.'
             ]);
 
             if ($validator->fails()) {
@@ -485,43 +490,67 @@ class ExcelController extends Controller
 
             $response = [
                 'audio_url' => '',
-                'image_url' => ''
+                'image_url' => '',
+                'errors' => []
             ];
 
             // Handle audio upload
             if ($request->has('audio_base64') && !empty($request->audio_base64)) {
-                $audioBase64 = $request->audio_base64;
-                
-                // Add data URI if not present
-                if (strpos($audioBase64, 'data:') !== 0) {
-                    $audioBase64 = 'data:audio/mpeg;base64,' . $audioBase64;
-                }
+                try {
+                    $audioBase64 = $request->audio_base64;
+                    
+                    // Add data URI if not present
+                    if (strpos($audioBase64, 'data:') !== 0) {
+                        $audioBase64 = 'data:audio/mpeg;base64,' . $audioBase64;
+                    }
 
-                if ($this->isValidBase64($audioBase64)) {
-                    $result = Cloudinary::upload($audioBase64, [
-                        'resource_type' => 'video',
-                        'folder' => 'audio'
-                    ]);
-                    $response['audio_url'] = $result->getSecurePath();
+                    if ($this->isValidBase64($audioBase64)) {
+                        $result = Cloudinary::upload($audioBase64, [
+                            'resource_type' => 'video',
+                            'folder' => 'audio',
+                            'timeout' => 300 // 5 minutes timeout
+                        ]);
+                        $response['audio_url'] = $result->getSecurePath();
+                    } else {
+                        $response['errors'][] = 'Audio base64 không hợp lệ';
+                    }
+                } catch (\Exception $e) {
+                    $response['errors'][] = 'Lỗi khi upload audio: ' . $e->getMessage();
                 }
             }
 
             // Handle image upload
             if ($request->has('image_base64') && !empty($request->image_base64)) {
-                $imageBase64 = $request->image_base64;
-                
-                // Add data URI if not present
-                if (strpos($imageBase64, 'data:') !== 0) {
-                    $imageBase64 = 'data:image/png;base64,' . $imageBase64;
-                }
+                try {
+                    $imageBase64 = $request->image_base64;
+                    
+                    // Add data URI if not present
+                    if (strpos($imageBase64, 'data:') !== 0) {
+                        $imageBase64 = 'data:image/png;base64,' . $imageBase64;
+                    }
 
-                if ($this->isValidBase64($imageBase64)) {
-                    $result = Cloudinary::upload($imageBase64, [
-                        'resource_type' => 'image',
-                        'folder' => 'images'
-                    ]);
-                    $response['image_url'] = $result->getSecurePath();
+                    if ($this->isValidBase64($imageBase64)) {
+                        $result = Cloudinary::upload($imageBase64, [
+                            'resource_type' => 'image',
+                            'folder' => 'images',
+                            'timeout' => 300 // 5 minutes timeout
+                        ]);
+                        $response['image_url'] = $result->getSecurePath();
+                    } else {
+                        $response['errors'][] = 'Image base64 không hợp lệ';
+                    }
+                } catch (\Exception $e) {
+                    $response['errors'][] = 'Lỗi khi upload image: ' . $e->getMessage();
                 }
+            }
+
+            // Check if any uploads were successful
+            if (empty($response['audio_url']) && empty($response['image_url'])) {
+                return response()->json([
+                    'message' => 'Không thể upload bất kỳ file nào.',
+                    'code' => 400,
+                    'data' => $response
+                ], 400);
             }
 
             return response()->json([

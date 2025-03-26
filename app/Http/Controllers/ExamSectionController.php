@@ -620,6 +620,129 @@ class ExamSectionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Lấy danh sách tất cả các exam section
+     */
+    public function getAllExamSections(Request $request)
+    {
+        try {
+            $pageNumber = $request->input('pageNumber', 1);
+            $pageSize = $request->input('pageSize', 10);
+
+            $query = ExamSection::where('is_deleted', false)
+                ->select([
+                    'id',
+                    'exam_code',
+                    'exam_name',
+                    'section_name',
+                    'part_number',
+                    'question_count',
+                    'year',
+                    'duration',
+                    'max_score',
+                    'type',
+                    'is_Free'
+                ]);
+
+            // Phân trang dữ liệu
+            $examSections = $query->paginate($pageSize);
+
+            return response()->json([
+                'message' => 'Lấy danh sách exam section thành công',
+                'code' => 200,
+                'data' => $examSections->items(),
+                'total' => $examSections->total(),
+                'pageCurrent' => $pageNumber,
+                'pageSize' => $pageSize,
+                'totalPage' => $examSections->lastPage()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi lấy danh sách exam section',
+                'code' => 500,
+                'data' => null,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy danh sách câu hỏi theo exam_code, nhóm theo part
+     * 
+     * @param string $examCode Mã bài thi
+     */
+    public function getQuestionsByExamCode($examCode)
+    {
+        try {
+            // Lấy tất cả các part của bài thi
+            $examSections = ExamSection::where('exam_code', $examCode)
+                ->where('is_deleted', false)
+                ->get();
+
+            if ($examSections->isEmpty()) {
+                return response()->json([
+                    'message' => 'Không tìm thấy bài thi',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
+
+            // Khởi tạo mảng kết quả với 7 part rỗng
+            $result = [
+                1 => [], // Listening
+                2 => [], // Listening
+                3 => [], // Listening
+                4 => [], // Listening
+                5 => [], // Reading
+                6 => [], // Reading
+                7 => []  // Reading
+            ];
+
+            // Lấy câu hỏi cho từng part
+            foreach ($examSections as $section) {
+                $partNumber = $section->part_number;
+                if (isset($result[$partNumber])) {
+                    // Lấy câu hỏi của part này
+                    $questions = Question::where('exam_section_id', $section->id)
+                        ->where('is_deleted', false)
+                        ->orderBy('question_number')
+                        ->get();
+
+                    // Thêm câu hỏi vào kết quả
+                    foreach ($questions as $question) {
+                        $result[$partNumber][] = [
+                            'question_number' => $question->question_number,
+                            'question_text' => $question->question_text,
+                            'options' => [
+                                'A' => $question->option_a,
+                                'B' => $question->option_b,
+                                'C' => $question->option_c,
+                                'D' => $question->option_d
+                            ],
+                            'correct_answer' => $question->correct_answer,
+                            'explanation' => $question->explanation,
+                            'audio_url' => $question->audio_url,
+                            'image_url' => $question->image_url
+                        ];
+                    }
+                }
+            }
+
+            return response()->json([
+                'message' => 'Lấy danh sách câu hỏi thành công',
+                'code' => 200,
+                'data' => $result
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi lấy danh sách câu hỏi',
+                'code' => 500,
+                'data' => null,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
 
 

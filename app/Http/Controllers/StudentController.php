@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SendPasswordMail;
+use App\Models\ClassUser;
+use App\Models\Classes;
+
 class StudentController extends Controller
 {
     public function listStudent(Request $request)
@@ -61,7 +64,8 @@ class StudentController extends Controller
             'gender' => 'required|in:MALE,FEMALE,OTHER',
             'phone' => 'nullable|string|max:11',
             'email' => 'nullable|email|max:100',
-            'address' => 'nullable|string|max:255'
+            'address' => 'nullable|string|max:255',
+            'class_id' => 'nullable|integer|exists:Room,id'
         ], [
             'name.required' => 'Tên không được để trống.',
             'dob.required' => 'Ngày sinh không được để trống.',
@@ -70,7 +74,8 @@ class StudentController extends Controller
             'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
             'phone.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
             'email.email' => 'Email không hợp lệ.',
-            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.'
+            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
+            'class_id.exists' => 'Lớp học không tồn tại.'
         ]);
 
         if ($validator->fails()) {
@@ -137,11 +142,33 @@ class StudentController extends Controller
                 'role' => 'STUDENT',
                 'is_deleted' => false
             ]);
+
+            // Nếu có class_id, thêm học sinh vào lớp học
+            if (!empty($request->class_id)) {
+                // Kiểm tra user đã có trong class chưa
+                if (ClassUser::where('class_id', $request->class_id)->where('user_id', $user->id)->exists()) {
+                    return response()->json([
+                        'message' => 'Student đã có trong class.',
+                        'code' => 409,
+                        'data' => null,
+                        'meta' => null
+                    ], 409);
+                }
+
+                // Thêm user vào class
+                $classUser = ClassUser::create([
+                    'class_id' => $request->class_id,
+                    'user_id' => $user->id
+                ]);
+
+                // Cập nhật số lượng học sinh trong lớp
+                $class = Classes::find($request->class_id);
+                if ($class) {
+                    $class->increment('student_count');
+                }
+            }
             
             DB::commit();
-            // Gửi email sau khi commit để tránh rollback không cần thiết
-                // Gửi email chứa tài khoản mật khẩu mới (Dùng queue để gửi không bị chậm)
-                // try {
                     Mail::to($account->email)->queue(new SendPasswordMail($account, $password));
 
                     return response()->json([
@@ -149,21 +176,7 @@ class StudentController extends Controller
                         'notice' => 'Trong trường hợp không nhận được mail trong 2p xin vui lòng kiểm tra lại email đã nhập!',
                         'code' => 200
                     ], 200);
-                // } catch (\Exception $e) {
-                //     return response()->json([
-                //         'message' => 'Không thể gửi email. Vui lòng thử lại sau',
-                //         'code' => 500,
-                //         'data' => null,
-                //     ], 500);
-                // }
-
-
-            // return response()->json([
-            //     'message' => 'Học sinh đã được tạo thành công.',
-            //     'code' => 201,
-            //     'data' => $user,
-            //     'meta' => null
-            // ], 201);
+             
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
