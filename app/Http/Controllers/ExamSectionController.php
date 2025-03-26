@@ -643,10 +643,11 @@ class ExamSectionController extends Controller
                     'max_score',
                     'type',
                     'is_Free'
-                ]);
+                ])
+                ->groupBy('exam_code', 'id', 'exam_name', 'section_name', 'part_number', 'question_count', 'year', 'duration', 'max_score', 'type', 'is_Free');
 
             // Phân trang dữ liệu
-            $examSections = $query->paginate($pageSize);
+            $examSections = $query->paginate($pageSize, ['*'], 'page', $pageNumber);
 
             return response()->json([
                 'message' => 'Lấy danh sách exam section thành công',
@@ -654,8 +655,8 @@ class ExamSectionController extends Controller
                 'data' => $examSections->items(),
                 'meta' =>  $examSections->total() > 0 ? [
                     'total' => $examSections->total(),
-                    'pageCurrent' => $pageNumber,
-                    'pageSize' => $pageSize,
+                    'pageCurrent' => $examSections->currentPage(),
+                    'pageSize' => $examSections->perPage(),
                     'totalPage' => $examSections->lastPage()
                 ] : null
             ], 200);
