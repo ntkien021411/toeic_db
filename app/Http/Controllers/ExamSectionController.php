@@ -652,10 +652,12 @@ class ExamSectionController extends Controller
                 'message' => 'Lấy danh sách exam section thành công',
                 'code' => 200,
                 'data' => $examSections->items(),
-                'total' => $examSections->total(),
-                'pageCurrent' => $pageNumber,
-                'pageSize' => $pageSize,
-                'totalPage' => $examSections->lastPage()
+                'meta' =>  $examSections->total() > 0 ? [
+                    'total' => $examSections->total(),
+                    'pageCurrent' => $pageNumber,
+                    'pageSize' => $pageSize,
+                    'totalPage' => $examSections->lastPage()
+                ] : null
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
