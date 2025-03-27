@@ -166,7 +166,7 @@ class ClassUserController extends Controller
             ->paginate($pageSize, ['*'], 'page', $pageNumber);
 
         // Map lại để chỉ lấy thông tin user và thêm email từ account
-        $students->getCollection()->transform(function($classUser) {
+        $students->setCollection($students->getCollection()->map(function ($classUser) {
             $user = $classUser->user;
             if ($user) {
                 $userData = $user->toArray();
@@ -176,7 +176,7 @@ class ClassUserController extends Controller
                 return $userData;
             }
             return null;
-        });
+        }));
 
         // Lọc bỏ các giá trị null (trường hợp user đã bị xóa)
         $students->setCollection(
@@ -207,16 +207,15 @@ class ClassUserController extends Controller
                     'class_name' => $class->class_name,
                     'class_type' => $class->class_type,
                     'start_date' => $class->start_date,
-                    'start_time'         => date('H:i', strtotime($class->start_time)),
-                    'end_time'           => date('H:i', strtotime($class->end_time)),
-                    'end_time' => $class->end_time,
+                    'start_time' => date('H:i', strtotime($class->start_time)),
+                    'end_time' => date('H:i', strtotime($class->end_time)),
                     'days' => $class->days,
                     'student_count' => $class->student_count,
                     'is_full' => $class->is_full,
                     'status' => $class->status,
                     'teacher' => $teacherInfo
                 ],
-                'students' => $students->items()
+                'students' => array_values($students->items()) // Convert to array
             ],
             'meta' => $students->total() > 0 ? [
                 'total' => $students->total(),
