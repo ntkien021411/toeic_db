@@ -48,6 +48,11 @@ Route::prefix('api')->group(function () {
         Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
         //Xem thống kê bài thi toeic 
         Route::get('/exam-results/statistics', [ExamResultController::class, 'getStatistics']);
+        //Tính điểm bài thi toeic 
+        Route::post('/exam-results/calculate-score', [ExamResultController::class, 'submitExam']);
+
+
+
 
          
         

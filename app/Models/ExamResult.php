@@ -18,6 +18,10 @@ class ExamResult extends Model
         'score', 
         'correct_answers', 
         'wrong_answers',
+        'correct_answers_listening',
+        'wrong_answers_listening',
+        'correct_answers_reading',
+        'wrong_answers_reading',
         'submitted_at',
         'updated_at',
         'deleted_at',
@@ -38,7 +42,7 @@ class ExamResult extends Model
 
         // Cập nhật created_at & updated_at khi insert
         static::creating(function ($model) {
-            $model->created_at = now();
+            $model->submitted_at = now();
             $model->updated_at = now();
         });
 

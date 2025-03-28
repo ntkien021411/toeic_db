@@ -36,156 +36,78 @@ class ExamResultController extends Controller
      */
     public function submitExam(Request $request)
     {
-        try {
-            // Validate dữ liệu đầu vào
-            $validator = Validator::make($request->all(), [
-                'user_id' => 'required|exists:users,id',
-                'exam_code' => 'required|exists:ExamSection,exam_code',
-                'answers' => 'required|array',
-                'answers.*.part_number' => 'required|integer|between:1,7',
-                'answers.*.questions' => 'required|array',
-                'answers.*.questions.*.question_number' => 'required|integer',
-                'answers.*.questions.*.user_answer' => 'required|string|in:A,B,C,D',
-                'answers.*.questions.*.time_spent' => 'required|integer|min:0'
-            ], [
-                'user_id.required' => 'ID người dùng là bắt buộc.',
-                'user_id.exists' => 'Người dùng không tồn tại.',
-                'exam_code.required' => 'Mã bài thi là bắt buộc.',
-                'exam_code.exists' => 'Bài thi không tồn tại.',
-                'answers.required' => 'Danh sách câu trả lời là bắt buộc.',
-                'answers.array' => 'Danh sách câu trả lời phải là một mảng.',
-                'answers.*.part_number.required' => 'Số phần thi là bắt buộc.',
-                'answers.*.part_number.integer' => 'Số phần thi phải là số nguyên.',
-                'answers.*.part_number.between' => 'Số phần thi phải từ 1 đến 7.',
-                'answers.*.questions.required' => 'Danh sách câu hỏi là bắt buộc.',
-                'answers.*.questions.array' => 'Danh sách câu hỏi phải là một mảng.',
-                'answers.*.questions.*.question_number.required' => 'Số câu hỏi là bắt buộc.',
-                'answers.*.questions.*.question_number.integer' => 'Số câu hỏi phải là số nguyên.',
-                'answers.*.questions.*.user_answer.required' => 'Câu trả lời là bắt buộc.',
-                'answers.*.questions.*.user_answer.in' => 'Câu trả lời phải là A, B, C hoặc D.',
-                'answers.*.questions.*.time_spent.required' => 'Thời gian làm bài là bắt buộc.',
-                'answers.*.questions.*.time_spent.integer' => 'Thời gian làm bài phải là số nguyên.',
-                'answers.*.questions.*.time_spent.min' => 'Thời gian làm bài phải lớn hơn hoặc bằng 0.'
-            ]);
+        // Validate dữ liệu đầu vào
+        $request->validate([
+            'user_id' => 'required|integer|exists:User,id',
+            'exam_code' => 'required|string',
+            'parts' => 'required|array',
+            'parts.*.part_number' => 'required|integer|between:1,7',
+            'parts.*.answers' => 'required|array',
+            'parts.*.answers.*.user_answer' => 'required|string',
+            'parts.*.answers.*.correct_answer' => 'required|string',
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Dữ liệu đầu vào không hợp lệ.',
-                    'code' => 400,
-                    'data' => null,
-                    'message_array' => $validator->errors()
-                ], 400);
-            }
+        // Khởi tạo mảng để lưu kết quả
+        $results = [];
 
-            // Lấy thông tin bài thi
-            $examSections = ExamSection::where('exam_code', $request->exam_code)
-                ->where('is_deleted', false)
-                ->get();
+        // Duyệt qua từng phần
+        foreach ($request->parts as $part) {
+            $partNumber = $part['part_number'];
+            $correctCount = 0;
+            $wrongCount = 0;
 
-            if ($examSections->isEmpty()) {
-                return response()->json([
-                    'message' => 'Không tìm thấy bài thi.',
-                    'code' => 404,
-                    'data' => null
-                ], 404);
-            }
-
-            // Khởi tạo mảng kết quả cho từng phần
-            $partScores = [
-                1 => ['correct' => 0, 'total' => 0], // Listening
-                2 => ['correct' => 0, 'total' => 0], // Listening
-                3 => ['correct' => 0, 'total' => 0], // Listening
-                4 => ['correct' => 0, 'total' => 0], // Listening
-                5 => ['correct' => 0, 'total' => 0], // Reading
-                6 => ['correct' => 0, 'total' => 0], // Reading
-                7 => ['correct' => 0, 'total' => 0]  // Reading
-            ];
-
-            // Xử lý từng phần thi
-            foreach ($request->answers as $partAnswer) {
-                $partNumber = $partAnswer['part_number'];
-                
-                // Lấy thông tin phần thi
-                $examSection = $examSections->firstWhere('part_number', $partNumber);
-                if (!$examSection) continue;
-
-                // Lấy danh sách câu hỏi của phần thi
-                $questions = Question::where('exam_section_id', $examSection->id)
-                    ->where('is_deleted', false)
-                    ->get();
-
-                // Xử lý từng câu trả lời
-                foreach ($partAnswer['questions'] as $answer) {
-                    $question = $questions->firstWhere('question_number', $answer['question_number']);
-                    if (!$question) continue;
-
-                    $partScores[$partNumber]['total']++;
-                    if ($answer['user_answer'] === $question->correct_answer) {
-                        $partScores[$partNumber]['correct']++;
-                    }
+            // Duyệt qua từng câu trả lời
+            foreach ($part['answers'] as $answer) {
+                if ($answer['user_answer'] === $answer['correct_answer']) {
+                    $correctCount++;
+                } else {
+                    $wrongCount++;
                 }
             }
 
-            // Tính điểm cho từng phần
-            $listeningScore = 0;
-            $readingScore = 0;
+            // Chỉ lưu kết quả nếu có câu trả lời
+            if (count($part['answers']) > 0) {
+                // Tính điểm cho phần thi
+                $score = $correctCount * 5; // Mỗi câu đúng được 5 điểm
 
-            // Tính điểm Listening (Part 1-4)
-            $listeningCorrect = 0;
-            $listeningTotal = 0;
-            for ($i = 1; $i <= 4; $i++) {
-                $listeningCorrect += $partScores[$i]['correct'];
-                $listeningTotal += $partScores[$i]['total'];
+                // Lấy exam_section_id
+                $examSectionId = $this->getExamSectionId($request->exam_code, $partNumber);
+
+                    ExamResult::create([
+                        'user_id' => $request->user_id,
+                        'exam_section_id' => $examSectionId,
+                        'correct_answers' => $correctCount,
+                        'wrong_answers' => $wrongCount,
+                        'score' => $score,
+                        'submitted_at' => now(), // Lưu thời gian nộp bài
+                    ]);
+                
+
+                // Thêm thông tin kết quả vào mảng $results
+                $results[] = [
+                    'part_number' => $partNumber,
+                    'correct_answers' => $correctCount,
+                    'wrong_answers' => $wrongCount,
+                    'score' => $score,
+                ];
             }
-            if ($listeningTotal > 0) {
-                $listeningScore = round(($listeningCorrect / $listeningTotal) * 495);
-            }
-
-            // Tính điểm Reading (Part 5-7)
-            $readingCorrect = 0;
-            $readingTotal = 0;
-            for ($i = 5; $i <= 7; $i++) {
-                $readingCorrect += $partScores[$i]['correct'];
-                $readingTotal += $partScores[$i]['total'];
-            }
-            if ($readingTotal > 0) {
-                $readingScore = round(($readingCorrect / $readingTotal) * 495);
-            }
-
-            // Tính tổng điểm
-            $totalScore = $listeningScore + $readingScore;
-
-            // Lưu kết quả vào database
-            $examResult = ExamResult::create([
-                'user_id' => $request->user_id,
-                'exam_code' => $request->exam_code,
-                'total_score' => $totalScore,
-                'listening_score' => $listeningScore,
-                'reading_score' => $readingScore,
-                'correct_answers' => json_encode($partScores),
-                'answers' => json_encode($request->answers)
-            ]);
-
-            return response()->json([
-                'message' => 'Nộp bài thi thành công.',
-                'code' => 201,
-                'data' => [
-                    'exam_result_id' => $examResult->id,
-                    'total_score' => $totalScore,
-                    'listening_score' => $listeningScore,
-                    'reading_score' => $readingScore,
-                    'part_scores' => $partScores
-                ]
-            ], 201);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Lỗi khi nộp bài thi.',
-                'code' => 500,
-                'data' => null,
-                'error' => $e->getMessage()
-            ], 500);
         }
+
+        return response()->json([
+            'message' => 'Nộp bài thi thành công.',
+            'code' => 201,
+            'data' => $results,
+        ]);
+    }
+
+    // Hàm để lấy exam_section_id dựa trên exam_code và part_number
+    private function getExamSectionId($examCode, $partNumber)
+    {
+        $examSection = ExamSection::where('exam_code', $examCode)
+            ->where('part_number', $partNumber)
+            ->first();
+
+        return $examSection ? $examSection->id : null;
     }
 
     /**
@@ -226,6 +148,7 @@ class ExamResultController extends Controller
                         'correct_answers' => $result->correct_answers,
                         'wrong_answers' => $result->wrong_answers,
                         'score' => $result->score, // Giả sử bạn đã lưu tổng điểm trong bảng Exam_Result
+                        'submitted_at' => $result->submitted_at, // Thêm thời gian nộp bài
                     ];
                 }
             }
