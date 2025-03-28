@@ -46,6 +46,8 @@ Route::prefix('api')->group(function () {
         Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
         // Exam Results
         Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
+        //Xem thống kê bài thi toeic 
+        Route::get('/exam-results/statistics', [ExamResultController::class, 'getStatistics']);
 
          
         
@@ -96,6 +98,11 @@ Route::prefix('api')->group(function () {
 
         //Tạo bài thi toeic 
         Route::post('/create-exam-section', [ExamSectionController::class, 'createExamSection']);
+
+        //Xóa bài thi toeic 
+        Route::delete('/delete-exam-section', [ExamSectionController::class, 'deleteExamSections']);
+        //Sửa bài thi toeic 
+        Route::put('/update-exam-section/{id}', [ExamSectionController::class, 'editExamSection']);
         //Import câu hỏi bài thi toeic từ file excel    
         Route::post('/read-excel/{part_number}', [ExcelController::class, 'readExcel']);
         //Tạo câu hỏi cho bài thi toeic

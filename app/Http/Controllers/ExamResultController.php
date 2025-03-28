@@ -9,152 +9,239 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-
+use App\Models\Question;
 
 class ExamResultController extends Controller
 {
-    //  Xem danh sách lịch sử bài thi của học viên 
-    public function examHistory(Request $request, $user_id)
+    /**
+     * API nộp bài thi và tính điểm
+     * 
+     * Cấu trúc dữ liệu đầu vào:
+     * {
+     *   "user_id": 1,                    // ID của người dùng
+     *   "exam_code": "TOEIC_001",        // Mã bài thi
+     *   "answers": [                     // Mảng chứa câu trả lời theo từng phần
+     *     {
+     *       "part_number": 1,            // Số phần thi (1-7)
+     *       "questions": [               // Mảng chứa câu trả lời của phần thi đó
+     *         {
+     *           "question_number": 1,     // Số thứ tự câu hỏi trong phần thi
+     *           "user_answer": "A",      // Câu trả lời của người dùng (A,B,C,D)
+     *           "time_spent": 30         // Thời gian làm bài (giây)
+     *         }
+     *       ]
+     *     }
+     *   ]
+     * }
+     */
+    public function submitExam(Request $request)
     {
-          // Kiểm tra user_id có tồn tại không
-        $user = User::find($user_id);
-        if (!$user) {
-            return response()->json([
-                'message' => 'User không tồn tại',
-                'code' => 404,
-                'data' => null,
-                'meta' => null
-            ], 404);
-        }
+        try {
+            // Validate dữ liệu đầu vào
+            $validator = Validator::make($request->all(), [
+                'user_id' => 'required|exists:users,id',
+                'exam_code' => 'required|exists:ExamSection,exam_code',
+                'answers' => 'required|array',
+                'answers.*.part_number' => 'required|integer|between:1,7',
+                'answers.*.questions' => 'required|array',
+                'answers.*.questions.*.question_number' => 'required|integer',
+                'answers.*.questions.*.user_answer' => 'required|string|in:A,B,C,D',
+                'answers.*.questions.*.time_spent' => 'required|integer|min:0'
+            ], [
+                'user_id.required' => 'ID người dùng là bắt buộc.',
+                'user_id.exists' => 'Người dùng không tồn tại.',
+                'exam_code.required' => 'Mã bài thi là bắt buộc.',
+                'exam_code.exists' => 'Bài thi không tồn tại.',
+                'answers.required' => 'Danh sách câu trả lời là bắt buộc.',
+                'answers.array' => 'Danh sách câu trả lời phải là một mảng.',
+                'answers.*.part_number.required' => 'Số phần thi là bắt buộc.',
+                'answers.*.part_number.integer' => 'Số phần thi phải là số nguyên.',
+                'answers.*.part_number.between' => 'Số phần thi phải từ 1 đến 7.',
+                'answers.*.questions.required' => 'Danh sách câu hỏi là bắt buộc.',
+                'answers.*.questions.array' => 'Danh sách câu hỏi phải là một mảng.',
+                'answers.*.questions.*.question_number.required' => 'Số câu hỏi là bắt buộc.',
+                'answers.*.questions.*.question_number.integer' => 'Số câu hỏi phải là số nguyên.',
+                'answers.*.questions.*.user_answer.required' => 'Câu trả lời là bắt buộc.',
+                'answers.*.questions.*.user_answer.in' => 'Câu trả lời phải là A, B, C hoặc D.',
+                'answers.*.questions.*.time_spent.required' => 'Thời gian làm bài là bắt buộc.',
+                'answers.*.questions.*.time_spent.integer' => 'Thời gian làm bài phải là số nguyên.',
+                'answers.*.questions.*.time_spent.min' => 'Thời gian làm bài phải lớn hơn hoặc bằng 0.'
+            ]);
 
-        // Kiểm tra role có phải STUDENT không
-        if ($user->role !== 'STUDENT') {
-            return response()->json([
-                'message' => 'User không phải STUDENT',
-                'code' => 403,
-                'data' => null,
-                'meta' => null
-            ], 403);
-        }
-
-        // Lấy danh sách bài thi có phân trang
-        $results = ExamResult::where('user_id', $user_id)
-            ->orderBy('submitted_at', 'desc')
-            ->paginate($request->input('per_page', 5));
-
-        return response()->json([
-            'message' => 'Lấy lịch sử bài thi thành công',
-            'code' => 200,
-            'data' => $results->items(),
-            'meta' => $results->total() > 0 ?[
-                    'total' => $results->total(),
-                    'current_page' => $results->currentPage(),
-                    'per_page' => $results->perPage(),
-                    'last_page' => $results->lastPage(),
-                    'next_page_url' => $results->nextPageUrl(),
-                    'prev_page_url' => $results->previousPageUrl(),
-                    'first_page_url' => $results->url(1),
-                    'last_page_url' => $results->url($results->lastPage())
-                ] : null
-        ], 200);
-    }
-    // Tìm kiếm bài thi học viên đã làm
-    public function searchExamResults(Request $request)
-    {
-        if ($request->filled('user_id')) {
-            // Kiểm tra user_id có tồn tại không
-            $user = User::find($request->user_id);
-            if (!$user) {
+            if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'User không tồn tại',
-                    'code' => 404,
+                    'message' => 'Dữ liệu đầu vào không hợp lệ.',
+                    'code' => 400,
                     'data' => null,
-                    'meta' => null
+                    'message_array' => $validator->errors()
+                ], 400);
+            }
+
+            // Lấy thông tin bài thi
+            $examSections = ExamSection::where('exam_code', $request->exam_code)
+                ->where('is_deleted', false)
+                ->get();
+
+            if ($examSections->isEmpty()) {
+                return response()->json([
+                    'message' => 'Không tìm thấy bài thi.',
+                    'code' => 404,
+                    'data' => null
                 ], 404);
             }
 
-            // Kiểm tra role có phải STUDENT không
-            if ($user->role !== 'STUDENT') {
-                return response()->json([
-                    'message' => 'User không phải STUDENT',
-                    'code' => 403,
-                    'data' => null,
-                    'meta' => null
-                ], 403);
+            // Khởi tạo mảng kết quả cho từng phần
+            $partScores = [
+                1 => ['correct' => 0, 'total' => 0], // Listening
+                2 => ['correct' => 0, 'total' => 0], // Listening
+                3 => ['correct' => 0, 'total' => 0], // Listening
+                4 => ['correct' => 0, 'total' => 0], // Listening
+                5 => ['correct' => 0, 'total' => 0], // Reading
+                6 => ['correct' => 0, 'total' => 0], // Reading
+                7 => ['correct' => 0, 'total' => 0]  // Reading
+            ];
+
+            // Xử lý từng phần thi
+            foreach ($request->answers as $partAnswer) {
+                $partNumber = $partAnswer['part_number'];
+                
+                // Lấy thông tin phần thi
+                $examSection = $examSections->firstWhere('part_number', $partNumber);
+                if (!$examSection) continue;
+
+                // Lấy danh sách câu hỏi của phần thi
+                $questions = Question::where('exam_section_id', $examSection->id)
+                    ->where('is_deleted', false)
+                    ->get();
+
+                // Xử lý từng câu trả lời
+                foreach ($partAnswer['questions'] as $answer) {
+                    $question = $questions->firstWhere('question_number', $answer['question_number']);
+                    if (!$question) continue;
+
+                    $partScores[$partNumber]['total']++;
+                    if ($answer['user_answer'] === $question->correct_answer) {
+                        $partScores[$partNumber]['correct']++;
+                    }
+                }
             }
-        }
 
-        // Xây dựng truy vấn tìm kiếm
-        $query = ExamResult::query();
+            // Tính điểm cho từng phần
+            $listeningScore = 0;
+            $readingScore = 0;
 
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-        if ($request->filled('exam_section_id')) {
-            $query->where('exam_section_id', $request->exam_section_id);
-        }
-        if ($request->filled('score_min')) {
-            $query->where('score', '>=', $request->score_min);
-        }
-        if ($request->filled('score_max')) {
-            $query->where('score', '<=', $request->score_max);
-        }
-        // Nếu client truyền correct_answers thì lọc theo điều kiện đó
-        if ($request->filled('correct_answers')) {
-            $query->where('correct_answers', '>=', $request->correct_answers);
-        }
+            // Tính điểm Listening (Part 1-4)
+            $listeningCorrect = 0;
+            $listeningTotal = 0;
+            for ($i = 1; $i <= 4; $i++) {
+                $listeningCorrect += $partScores[$i]['correct'];
+                $listeningTotal += $partScores[$i]['total'];
+            }
+            if ($listeningTotal > 0) {
+                $listeningScore = round(($listeningCorrect / $listeningTotal) * 495);
+            }
 
-        // Nếu client truyền wrong_answers thì lọc theo điều kiện đó
-        if ($request->filled('wrong_answers')) {
-            $query->where('wrong_answers', '>=', $request->wrong_answers);
-        }
+            // Tính điểm Reading (Part 5-7)
+            $readingCorrect = 0;
+            $readingTotal = 0;
+            for ($i = 5; $i <= 7; $i++) {
+                $readingCorrect += $partScores[$i]['correct'];
+                $readingTotal += $partScores[$i]['total'];
+            }
+            if ($readingTotal > 0) {
+                $readingScore = round(($readingCorrect / $readingTotal) * 495);
+            }
 
-        // Nếu client truyền submitted_at thì lọc theo ngày đó
-        if ($request->filled('submitted_at')) {
-            $query->whereDate('submitted_at', $request->submitted_at);
-        }
+            // Tính tổng điểm
+            $totalScore = $listeningScore + $readingScore;
 
-        // Thực hiện phân trang
-        $perPage = $request->query('per_page', 5);
-        $results = $query->orderBy('submitted_at', 'desc')->paginate($perPage);
+            // Lưu kết quả vào database
+            $examResult = ExamResult::create([
+                'user_id' => $request->user_id,
+                'exam_code' => $request->exam_code,
+                'total_score' => $totalScore,
+                'listening_score' => $listeningScore,
+                'reading_score' => $readingScore,
+                'correct_answers' => json_encode($partScores),
+                'answers' => json_encode($request->answers)
+            ]);
 
-        return response()->json([
-            'message' => 'Tìm kiếm bài thi thành công',
-            'code' => 200,
-            'data' => $results->items(),
-            'meta' => $results->total() > 0 ?[
-                    'total' => $results->total(),
-                    'current_page' => $results->currentPage(),
-                    'per_page' => $results->perPage(),
-                    'last_page' => $results->lastPage(),
-                    'next_page_url' => $results->nextPageUrl(),
-                    'prev_page_url' => $results->previousPageUrl(),
-                    'first_page_url' => $results->url(1),
-                    'last_page_url' => $results->url($results->lastPage())
-                ] : null
-        ], 200);
-    }
-
-    // e.6.3: Xem thông tin chi tiết bài thi
-    public function examDetail($exam_id)
-    {
-        $exam = ExamSection::where('id', $exam_id)->where('is_deleted', false)->first();
-
-        if (!$exam) {
             return response()->json([
-                'message' => 'Bài thi không tồn tại',
-                'code' => 404,
+                'message' => 'Nộp bài thi thành công.',
+                'code' => 201,
+                'data' => [
+                    'exam_result_id' => $examResult->id,
+                    'total_score' => $totalScore,
+                    'listening_score' => $listeningScore,
+                    'reading_score' => $readingScore,
+                    'part_scores' => $partScores
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi nộp bài thi.',
+                'code' => 500,
                 'data' => null,
-               'meta' => null
-            ], 404);
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Tính điểm TOEIC dựa trên số câu trả lời đúng
+     * Đây là phiên bản đơn giản - bạn có thể thêm logic tính điểm phức tạp hơn
+     */
+    private function calculateTOEICScore($correctAnswers, $totalQuestions)
+    {
+        // Tính tỷ lệ phần trăm câu trả lời đúng
+        $percentage = ($correctAnswers / $totalQuestions) * 100;
+        // Chuyển đổi sang thang điểm TOEIC (0-990)
+        return round($percentage * 10);
+    }
+
+    public function getStatistics()
+    {
+        // Lấy tất cả các bài thi unique theo exam_code và part_number
+        $examSections = ExamSection::select('id', 'exam_code', 'part_number')
+            ->distinct()
+            ->get();
+
+        $statistics = [];
+
+        foreach ($examSections as $section) {
+            // Lấy kết quả bài thi cho từng exam_section_id
+            $results = ExamResult::where('exam_section_id', $section->id)->get();
+
+            // Khởi tạo mảng để chứa thông tin sinh viên
+            $students = [];
+
+            foreach ($results as $result) {
+                // Lấy thông tin sinh viên
+                $user = User::find($result->user_id);
+                if ($user) {
+                    $students[] = [
+                        'user_id' => $user->id,
+                        'user_name' => $user->full_name,
+                        'correct_answers' => $result->correct_answers,
+                        'wrong_answers' => $result->wrong_answers,
+                        'score' => $result->score, // Giả sử bạn đã lưu tổng điểm trong bảng Exam_Result
+                    ];
+                }
+            }
+
+            // Thêm vào mảng thống kê
+            $statistics[] = [
+                'exam_code' => $section->exam_code,
+                'part_number' => $section->part_number,
+                'students' => $students,
+            ];
         }
 
         return response()->json([
-            'message' => 'Thông tin bài thi  được lấy thành công.',
+            'message' => 'Thống kê bài thi thành công.',
             'code' => 200,
-            'data' => $exam,
-            'meta' => null
-        ], 200);
+            'data' => $statistics,
+        ]);
     }
-
 }

@@ -590,3 +590,15 @@ UNION ALL
 SELECT id, 'English Proficiency', ROUND(RAND() * 100, 2), 'Intermediate', 'British Council', '2023-05-10', '2025-05-10' FROM User WHERE role = 'TEACHER'
 UNION ALL
 SELECT id, 'Academic IELTS', ROUND(RAND() * 9, 2), 'Upper-Intermediate', 'IDP', '2023-07-20', '2025-07-20' FROM User WHERE role = 'TEACHER';
+
+
+INSERT INTO Exam_Result (user_id, exam_section_id, score, correct_answers, wrong_answers, correct_answers_listening, wrong_answers_listening, correct_answers_reading, wrong_answers_reading, submitted_at, updated_at, deleted_at, is_deleted) VALUES
+(4, 1, 25, 5, 1, 3, 1, 2, 0, NOW(), NOW(), NULL, FALSE),  -- User 4, Exam Section 1
+(4, 2, 30, 10, 0, 5, 0, 5, 0, NOW(), NOW(), NULL, FALSE), -- User 4, Exam Section 2
+(4, 3, 20, 4, 2, 2, 2, 2, 0, NOW(), NOW(), NULL, FALSE),  -- User 4, Exam Section 3
+(5, 1, 18, 3, 3, 2, 1, 1, 2, NOW(), NOW(), NULL, FALSE),  -- User 5, Exam Section 1
+(5, 2, 22, 7, 1, 3, 0, 4, 1, NOW(), NOW(), NULL, FALSE),  -- User 5, Exam Section 2
+(5, 3, 15, 2, 4, 1, 1, 1, 3, NOW(), NOW(), NULL, FALSE),  -- User 5, Exam Section 3
+(6, 1, 26, 6, 0, 3, 0, 3, 0, NOW(), NOW(), NULL, FALSE),  -- User 6, Exam Section 1
+(6, 2, 20, 5, 1, 2, 1, 3, 0, NOW(), NOW(), NULL, FALSE),  -- User 6, Exam Section 2
+(6, 3, 30, 10, 0, 5, 0, 5, 0, NOW(), NOW(), NULL, FALSE); -- User 6, Exam Section 3

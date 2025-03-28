@@ -91,8 +91,8 @@ class ExamSectionController extends Controller
         // Kiểm tra exam_code và part_number đã tồn tại chưa
         $existingExam = ExamSection::where('exam_code', $request->exam_code)
             ->where('part_number', $request->part_number)
-        ->where('is_deleted', false)
-        ->first();
+            ->where('is_deleted', false)
+            ->first();
         
         if ($existingExam) {
             return response()->json([
@@ -145,7 +145,6 @@ class ExamSectionController extends Controller
                     }
                 }
             ],
-            'year' => 'required|integer|min:2000',
             'duration' => [
                 'required',
                 'integer',
@@ -153,13 +152,13 @@ class ExamSectionController extends Controller
                 function ($attribute, $value, $fail) use ($request) {
                     // Kiểm tra thời gian phù hợp với từng part
                     $maxDuration = [
-                        1 => 6,
-                        2 => 20,
-                        3 => 30,
-                        4 => 30,
-                        5 => 25,
-                        6 => 15,
-                        7 => 55
+                        1 => 6,    // Part 1: 6 phút
+                        2 => 20,   // Part 2: 20 phút
+                        3 => 30,   // Part 3: 30 phút
+                        4 => 30,   // Part 4: 30 phút
+                        5 => 25,   // Part 5: 25 phút
+                        6 => 15,   // Part 6: 15 phút
+                        7 => 55    // Part 7: 55 phút
                     ];
                     
                     if (isset($maxDuration[$request->part_number]) && $value > $maxDuration[$request->part_number]) {
@@ -181,9 +180,6 @@ class ExamSectionController extends Controller
             'question_count.required' => 'Số câu hỏi là bắt buộc.',
             'question_count.integer' => 'Số câu hỏi phải là số nguyên.',
             'question_count.min' => 'Số câu hỏi phải lớn hơn 0.',
-            'year.required' => 'Năm là bắt buộc.',
-            'year.integer' => 'Năm phải là số nguyên.',
-            'year.min' => 'Năm phải từ 2000 trở lên.',
             'duration.required' => 'Thời gian làm bài là bắt buộc.',
             'duration.integer' => 'Thời gian làm bài phải là số nguyên.',
             'duration.min' => 'Thời gian làm bài phải lớn hơn 0.',
@@ -207,13 +203,13 @@ class ExamSectionController extends Controller
 
         try {
             // Tạo exam section mới
-        $examSection = ExamSection::create([
+            $examSection = ExamSection::create([
                 'exam_code' => $request->exam_code,
                 'exam_name' => $request->exam_name,
                 'section_name' => $request->section_name,
                 'part_number' => $request->part_number,
                 'question_count' => $request->question_count,
-                'year' => $request->year,
+                'year' => 1, // Set mặc định là 1
                 'duration' => $request->duration,
                 'max_score' => $request->max_score,
                 'type' => $request->type,
@@ -235,7 +231,7 @@ class ExamSectionController extends Controller
                 'Reading' => array_filter($missingParts, fn($part) => $part >= 5 && $part <= 7)
             ];
 
-        return response()->json([
+            return response()->json([
                 'message' => 'Tạo bài thi thành công.',
                 'code' => 201,
                 'data' => [
@@ -256,7 +252,7 @@ class ExamSectionController extends Controller
                     ]
                 ],
                 'meta' => null
-        ], 201);
+            ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -740,6 +736,230 @@ class ExamSectionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Lỗi khi lấy danh sách câu hỏi',
+                'code' => 500,
+                'data' => null,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cập nhật thông tin exam section
+     * 
+     * @param Request $request
+     * @param int $id ID của exam section cần cập nhật
+     */
+    public function editExamSection(Request $request, $id)
+    {
+        try {
+            // Tìm exam section cần cập nhật
+            $examSection = ExamSection::find($id);
+            if (!$examSection) {
+                return response()->json([
+                    'message' => 'Không tìm thấy exam section.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
+
+            // Validate dữ liệu đầu vào
+            $validator = Validator::make($request->all(), [
+                'exam_name' => 'required|string',
+                'section_name' => [
+                    'required',
+                    'in:Listening,Reading',
+                    function ($attribute, $value, $fail) use ($examSection) {
+                        // Kiểm tra section_name phù hợp với part_number hiện tại
+                        if ($examSection->part_number >= 1 && $examSection->part_number <= 4 && $value !== 'Listening') {
+                            $fail('Part 1-4 phải thuộc phần Listening.');
+                        }
+                        if ($examSection->part_number >= 5 && $examSection->part_number <= 7 && $value !== 'Reading') {
+                            $fail('Part 5-7 phải thuộc phần Reading.');
+                        }
+                    }
+                ],
+                'part_number' => 'required|integer|between:1,7',
+                'question_count' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    function ($attribute, $value, $fail) use ($request) {
+                        // Số câu hỏi cố định cho từng part
+                        $requiredQuestions = [
+                            1 => 6,    // Part 1: 6 câu
+                            2 => 25,   // Part 2: 25 câu
+                            3 => 39,   // Part 3: 39 câu
+                            4 => 30,   // Part 4: 30 câu
+                            5 => 30,   // Part 5: 30 câu
+                            6 => 16,   // Part 6: 16 câu
+                            7 => 54    // Part 7: 54 câu
+                        ];
+                        
+                        if (isset($requiredQuestions[$request->part_number]) && $value !== $requiredQuestions[$request->part_number]) {
+                            $fail("Part {$request->part_number} phải có chính xác {$requiredQuestions[$request->part_number]} câu hỏi.");
+                        }
+                    }
+                ],
+                'duration' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    function ($attribute, $value, $fail) use ($request) {
+                        // Kiểm tra thời gian phù hợp với từng part
+                        $maxDuration = [
+                            1 => 6,    // Part 1: 6 phút
+                            2 => 20,   // Part 2: 20 phút
+                            3 => 30,   // Part 3: 30 phút
+                            4 => 30,   // Part 4: 30 phút
+                            5 => 25,   // Part 5: 25 phút
+                            6 => 15,   // Part 6: 15 phút
+                            7 => 55    // Part 7: 55 phút
+                        ];
+                        
+                        if (isset($maxDuration[$request->part_number]) && $value > $maxDuration[$request->part_number]) {
+                            $fail("Part {$request->part_number} không thể có thời gian làm bài nhiều hơn {$maxDuration[$request->part_number]} phút.");
+                        }
+                    }
+                ],
+                'max_score' => 'required|integer|min:1',
+                'type' => 'required|string',
+                'is_Free' => 'required|boolean'
+            ], [
+                'exam_name.required' => 'Tên bài thi là bắt buộc.',
+                'section_name.required' => 'Tên phần thi là bắt buộc.',
+                'section_name.in' => 'Phần thi phải là: Listening hoặc Reading.',
+                'part_number.required' => 'Số phần là bắt buộc.',
+                'part_number.integer' => 'Số phần phải là số nguyên.',
+                'part_number.between' => 'Số phần phải từ 1 đến 7.',
+                'question_count.required' => 'Số câu hỏi là bắt buộc.',
+                'question_count.integer' => 'Số câu hỏi phải là số nguyên.',
+                'question_count.min' => 'Số câu hỏi phải lớn hơn 0.',
+                'duration.required' => 'Thời gian làm bài là bắt buộc.',
+                'duration.integer' => 'Thời gian làm bài phải là số nguyên.',
+                'duration.min' => 'Thời gian làm bài phải lớn hơn 0.',
+                'max_score.required' => 'Điểm tối đa là bắt buộc.',
+                'max_score.integer' => 'Điểm tối đa phải là số nguyên.',
+                'max_score.min' => 'Điểm tối đa phải lớn hơn 0.',
+                'type.required' => 'Loại bài thi là bắt buộc.',
+                'is_Free.required' => 'Trạng thái miễn phí là bắt buộc.',
+                'is_Free.boolean' => 'Trạng thái miễn phí phải là true hoặc false.'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Dữ liệu đầu vào không hợp lệ.',
+                    'code' => 400,
+                    'data' => null,
+                    'message_array' => $validator->errors()
+                ], 400);
+            }
+
+            // Cập nhật thông tin exam section
+            $examSection->update([
+                'exam_name' => $request->exam_name,
+                'section_name' => $request->section_name,
+                'part_number' => $request->part_number,
+                'question_count' => $request->question_count,
+                'duration' => $request->duration,
+                'max_score' => $request->max_score,
+                'type' => $request->type,
+                'is_Free' => $request->is_Free
+            ]);
+
+            return response()->json([
+                'message' => 'Cập nhật exam section thành công.',
+                'code' => 200,
+                'data' => [
+                    'id' => $examSection->id,
+                    'exam_code' => $examSection->exam_code,
+                    'exam_name' => $examSection->exam_name,
+                    'section_name' => $examSection->section_name,
+                    'part_number' => $examSection->part_number,
+                    'question_count' => $examSection->question_count,
+                    'duration' => $examSection->duration,
+                    'max_score' => $examSection->max_score,
+                    'type' => $examSection->type,
+                    'is_Free' => $examSection->is_Free
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi cập nhật exam section.',
+                'code' => 500,
+                'data' => null,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Xóa nhiều exam section
+     * 
+     * @param Request $request Chứa mảng id của các exam section cần xóa
+     */
+    public function deleteExamSections(Request $request)
+    {
+        try {
+            // Validate dữ liệu đầu vào
+            $validator = Validator::make($request->all(), [
+                'ids' => 'required|array',
+                'ids.*' => 'required|integer'
+            ], [
+                'ids.required' => 'Danh sách ID là bắt buộc.',
+                'ids.array' => 'Danh sách ID phải là một mảng.',
+                'ids.*.required' => 'ID không được để trống.',
+                'ids.*.integer' => 'ID phải là số nguyên.'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Dữ liệu đầu vào không hợp lệ.',
+                    'code' => 400,
+                    'data' => null,
+                    'message_array' => $validator->errors()
+                ], 400);
+            }
+
+            // Lấy danh sách ID tồn tại và chưa bị xóa
+            $existingIds = ExamSection::whereIn('id', $request->ids)
+                ->where('is_deleted', false)
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($existingIds)) {
+                return response()->json([
+                    'message' => 'Không tìm thấy exam section nào để xóa.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
+
+            // Cập nhật trạng thái xóa cho các exam section tồn tại
+            $deletedCount = ExamSection::whereIn('id', $existingIds)
+                ->update([
+                    'is_deleted' => true,
+                    'deleted_at' => now()
+                ]);
+
+            // Phân loại kết quả
+            $result = [
+                'deleted_ids' => $existingIds,
+                'skipped_ids' => array_diff($request->ids, $existingIds)
+            ];
+
+            return response()->json([
+                'message' => 'Xóa exam section thành công.',
+                'code' => 200,
+                'data' => [
+                    'deleted_count' => $deletedCount,
+                    'result' => $result
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi xóa exam section.',
                 'code' => 500,
                 'data' => null,
                 'error' => $e->getMessage()
