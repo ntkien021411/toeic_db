@@ -41,10 +41,10 @@ class ExamResultController extends Controller
             'user_id' => 'required|integer|exists:User,id',
             'exam_code' => 'required|string',
             'parts' => 'required|array',
-            'parts.*.part_number' => 'required|integer|between:1,7',
-            'parts.*.answers' => 'required|array',
-            'parts.*.answers.*.user_answer' => 'required|string',
-            'parts.*.answers.*.correct_answer' => 'required|string',
+            'parts.*.part_number' => 'nullable|integer|between:1,7',
+            'parts.*.answers' => 'nullable|array',
+            'parts.*.answers.*.user_answer' => 'nullable|string',
+            'parts.*.answers.*.correct_answer' => 'nullable|string',
         ]);
 
         // Khởi tạo mảng để lưu kết quả
@@ -57,31 +57,38 @@ class ExamResultController extends Controller
             $wrongCount = 0;
 
             // Duyệt qua từng câu trả lời
-            foreach ($part['answers'] as $answer) {
-                if ($answer['user_answer'] === $answer['correct_answer']) {
-                    $correctCount++;
-                } else {
-                    $wrongCount++;
+            if (isset($part['answers'])) {
+                foreach ($part['answers'] as $answer) {
+                    // Kiểm tra nếu chỉ có một trong hai trường user_answer hoặc correct_answer
+                    if ((isset($answer['user_answer']) && !isset($answer['correct_answer'])) || 
+                        (!isset($answer['user_answer']) && isset($answer['correct_answer']))) {
+                        $wrongCount++; // Tính là câu sai
+                    } elseif (isset($answer['user_answer']) && isset($answer['correct_answer'])) {
+                        if ($answer['user_answer'] === $answer['correct_answer']) {
+                            $correctCount++;
+                        } else {
+                            $wrongCount++;
+                        }
+                    }
                 }
             }
 
             // Chỉ lưu kết quả nếu có câu trả lời
-            if (count($part['answers']) > 0) {
+            if (count($part['answers'] ?? []) > 0) {
                 // Tính điểm cho phần thi
                 $score = $correctCount * 5; // Mỗi câu đúng được 5 điểm
 
                 // Lấy exam_section_id
                 $examSectionId = $this->getExamSectionId($request->exam_code, $partNumber);
 
-                    ExamResult::create([
-                        'user_id' => $request->user_id,
-                        'exam_section_id' => $examSectionId,
-                        'correct_answers' => $correctCount,
-                        'wrong_answers' => $wrongCount,
-                        'score' => $score,
-                        'submitted_at' => now(), // Lưu thời gian nộp bài
-                    ]);
-                
+                ExamResult::create([
+                    'user_id' => $request->user_id,
+                    'exam_section_id' => $examSectionId,
+                    'correct_answers' => $correctCount,
+                    'wrong_answers' => $wrongCount,
+                    'score' => $score,
+                    'submitted_at' => now(), // Lưu thời gian nộp bài
+                ]);
 
                 // Thêm thông tin kết quả vào mảng $results
                 $results[] = [
