@@ -45,12 +45,12 @@ Route::prefix('api')->group(function () {
  
          //Xem danh sách câu hỏi của bài thi toeic theo từng bài và từng part 
          Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
-         // Exam Results
+         // //Tính điểm bài thi toeic 
          Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
          //Xem thống kê bài thi toeic 
          Route::get('/exam-results/statistics', [ExamResultController::class, 'getStatistics']);
-         //Tính điểm bài thi toeic 
-         Route::post('/exam-results/calculate-score', [ExamResultController::class, 'submitExam']);
+        //  //Tính điểm bài thi toeic 
+        //  Route::post('/exam-results/calculate-score', [ExamResultController::class, 'submitExam']);
 
         Route::post('/upload-base64', [ExcelController::class, 'uploadBase64Files']);
 
