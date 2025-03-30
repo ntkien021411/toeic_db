@@ -33,29 +33,6 @@ Route::prefix('api')->group(function () {
 
         //EXAMSECTION Bài luyện thi toeic 
         Route::get('/tests-full/list', [ExamSectionController::class, 'listExam']); // Xem danh sách bài Luyện thi
-
-         //Xem danh sách tất cả bài thi toeic
-         Route::get('/exam-sections/all', [ExamSectionController::class, 'getAllExamSections']);  // API mới
-         //Xem danh sách câu hỏi của bài thi toeic theo từng bài 
-         Route::get('/exam-sections/{examCode}/questions', [ExamSectionController::class, 'getQuestionsByExamCode']);  //
-
-        //Xem danh sách bài thi toeic theo từng part và exam_code 
-        Route::get('/list-exam-section/{exam_code}', [ExamSectionController::class, 'checkExamParts']);
-
-        //Xem danh sách câu hỏi của bài thi toeic theo từng bài và từng part 
-        Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
-        // Exam Results
-        Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
-        //Xem thống kê bài thi toeic 
-        Route::get('/exam-results/statistics', [ExamResultController::class, 'getStatistics']);
-        //Tính điểm bài thi toeic 
-        Route::post('/exam-results/calculate-score', [ExamResultController::class, 'submitExam']);
-
-
-
-
-         
-        
         Route::post('/upload-base64', [ExcelController::class, 'uploadBase64Files']);
     });
 
@@ -77,6 +54,14 @@ Route::prefix('api')->group(function () {
         Route::post('/teachers/add-teacher', [TeacherController::class, 'createUser']); // Thêm giáo viên
         Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'editUser']); // Sửa giáo viên
         Route::delete('/teachers/delete', [TeacherController::class, 'delete']); 
+
+        // DIPLOMA
+        Route::get('/diploma/list/{user_id}', [DiplomaController::class, 'index']);  // Xem danh sách tất cả bằng cấp hoặc của 1 giáo viên
+        Route::post('/diploma/add-diploma-teacher', [DiplomaController::class, 'store']); // Thêm bằng cấp
+        Route::put('/diploma/edit-diploma-teacher/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
+        Route::delete('/diploma/delete', [DiplomaController::class, 'softDelete']); // Xem chi tiết bằng cấp   
+
+
         //STUDENT Xem danh sách học viên
         Route::get('/students/list', [StudentController::class, 'listStudent']);
         Route::post('/students/add-student', [StudentController::class, 'createUser']); // Thêm học viên
@@ -103,17 +88,16 @@ Route::prefix('api')->group(function () {
 
         //Tạo bài thi toeic 
         Route::post('/create-exam-section', [ExamSectionController::class, 'createExamSection']);
-
-        //Xóa bài thi toeic 
-        Route::delete('/delete-exam-section', [ExamSectionController::class, 'deleteExamSections']);
-        //Sửa bài thi toeic 
-        Route::put('/update-exam-section/{id}', [ExamSectionController::class, 'editExamSection']);
+        //Xem danh sách bài thi toeic theo từng part và exam_code 
+        Route::get('/list-exam-section/{exam_code}', [ExamSectionController::class, 'checkExamParts']);
         //Import câu hỏi bài thi toeic từ file excel    
         Route::post('/read-excel/{part_number}', [ExcelController::class, 'readExcel']);
         //Tạo câu hỏi cho bài thi toeic
         Route::post('/create-question/{exam_code}/{part_number}', [ExcelController::class, 'importQuestions']);
-       
-            
+        //Xem danh sách câu hỏi của bài thi toeic
+        Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
+
+        
 
 
         //Base Logic 

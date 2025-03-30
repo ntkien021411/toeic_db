@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SendPasswordMail;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class TeacherController extends Controller
 {
@@ -67,7 +68,7 @@ class TeacherController extends Controller
             'phone' => 'nullable|string|max:11|unique:User,phone',
             'email' => 'nullable|email|max:100|unique:Account,email',
             'address' => 'nullable|string|max:255',
-            'certificates' => 'nullable|array|min:1'
+            'image_link' => 'nullable|string' // Thêm trường image_link
         ], [
             'name.required' => 'Tên không được để trống.',
             'dob.required' => 'Ngày sinh không được để trống.',
@@ -79,8 +80,6 @@ class TeacherController extends Controller
             'email.email' => 'Email không hợp lệ.',
             'email.unique' => 'Email đã tồn tại.',
             'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
-            'certificates.array' => 'Danh sách chứng chỉ phải là một mảng.',
-            'certificates.min' => 'Giáo viên phải có ít nhất một chứng chỉ.'
         ]);
 
         if ($validator->fails()) {
@@ -96,51 +95,72 @@ class TeacherController extends Controller
         try {
             DB::beginTransaction();
 
-           // Kiểm tra xem email đã tồn tại chưa
-           if (!empty($request->email) && Account::where('email', $request->email)->exists()) {
-            return response()->json([
-                'message' => 'Email đã tồn tại.',
-                'code' => 400
-            ], 400);
-        }
+            // Kiểm tra xem email đã tồn tại chưa
+            if (!empty($request->email) && Account::where('email', $request->email)->exists()) {
+                return response()->json([
+                    'message' => 'Email đã tồn tại.',
+                    'code' => 400
+                ], 400);
+            }
 
-        // Kiểm tra xem số điện thoại đã tồn tại chưa
-        if (!empty($request->phone) && User::where('phone', $request->phone)->exists()) {
-            return response()->json([
-                'message' => 'Số điện thoại đã tồn tại.',
-                'code' => 400
-            ], 400);
-        }
-          // Tạo mật khẩu ngẫu nhiên
-          $password = Hash::make(Str::random(12));
+            // Kiểm tra xem số điện thoại đã tồn tại chưa
+            if (!empty($request->phone) && User::where('phone', $request->phone)->exists()) {
+                return response()->json([
+                    'message' => 'Số điện thoại đã tồn tại.',
+                    'code' => 400
+                ], 400);
+            }
 
-           // Tạo username từ email (lấy phần trước @)
-           $baseUsername = explode('@', $request->email)[0];
-           $username = $baseUsername . Str::random(3);
-           $counter = 1;
-   
-           // Kiểm tra xem username đã tồn tại chưa
-           while (Account::where('username', $username)->exists()) {
-               $username = $baseUsername . $counter;
-               $counter++;
-           }
-                // Tạo tài khoản mới
-             $password = Str::random(8);
-             $hashedPassword = Hash::make($password);
-            
+            // Tạo mật khẩu ngẫu nhiên
+            $password = Hash::make(Str::random(12));
 
-            // Tạo tài khoản giáo viên mới
+            // Tạo username từ email (lấy phần trước @)
+            $baseUsername = explode('@', $request->email)[0];
+            $username = $baseUsername . Str::random(3);
+            $counter = 1;
+
+            // Kiểm tra xem username đã tồn tại chưa
+            while (Account::where('username', $username)->exists()) {
+                $username = $baseUsername . $counter;
+                $counter++;
+            }
+
+            // Tạo tài khoản mới
             $account = Account::create([
                 'username' => $username,
                 'email' => $request->email,
-                'password' => $hashedPassword,
+                'password' => $password,
                 'active_status' => false,
                 'is_first' => true,
                 'active_date' => now(),
             ]);
-             // Xử lý danh sách chứng chỉ (loại bỏ khoảng trắng)
-            $certificates = array_map(fn($cert) => preg_replace('/\s+/', '', trim($cert)), $request->certificates ?? []);
 
+            // Upload ảnh lên Cloudinary nếu có
+            $imageUrl = null;
+            if (!empty($request->image_link)) {
+                // Thêm data URI nếu không có
+                if (strpos($request->image_link, 'data:image/') !== 0) {
+                    $request->image_link = 'data:image/png;base64,' . $request->image_link;
+                }
+
+                // Kiểm tra base64 hợp lệ
+                if ($this->isValidBase64($request->image_link)) {
+                    $imageUrl = $this->uploadImageToCloudinary($request->image_link);
+                    if ($imageUrl === 123) {
+                        return response()->json([
+                            'message' => 'Không thể upload hình ảnh.',
+                            'code' => 400
+                        ], 400);
+                    }
+                } else {
+                    return response()->json([
+                        'message' => 'Image base64 không hợp lệ.',
+                        'code' => 400
+                    ], 400);
+                }
+            }
+
+            // Tạo giáo viên mới
             $teacher = User::create([
                 'account_id' => $account->id,
                 'full_name' => $request->name,
@@ -149,38 +169,21 @@ class TeacherController extends Controller
                 'phone' => $request->phone,
                 'address' => $request->address,
                 'role' => 'TEACHER',
-                'is_deleted' => false
+                'is_deleted' => false,
+                'image_link' => $imageUrl // Lưu đường dẫn ảnh
             ]);
-
-             // Tạo các chứng chỉ cho giáo viên
-             foreach ($request->certificates as $certificate) {
-                Diploma::create([
-                    'user_id' => $teacher->id,
-                    'certificate_name' => trim($certificate)
-                ]);
-            }
 
             DB::commit();
 
-            // Gửi email sau khi commit để tránh rollback không cần thiết
-                // Gửi email chứa tài khoản mật khẩu mới (Dùng queue để gửi không bị chậm)
-                // try {
-                    Mail::to($account->email)->queue(new SendPasswordMail($account, $password));
+            Mail::to($account->email)->queue(new SendPasswordMail($account, $password));
 
-                    return response()->json([
-                        'message' => 'Tài khoản và mật khẩu mới đã được gửi vào email của bạn.',
-                        'notice' => 'Trong trường hợp không nhận được mail trong 2p xin vui lòng kiểm tra lại email đã nhập!',
-                        'code' => 200,
-                        'data' => $teacher,
-                        'meta' => null
-                    ], 200);
-                // } catch (\Exception $e) {
-                //     return response()->json([
-                //         'message' => 'Có quá trình lỗi trong lúc gửi. Vui lòng thử lại sau',
-                //         'code' => 500,
-                //         'data' => null,
-                //     ], 500);
-                // }
+            return response()->json([
+                'message' => 'Tài khoản và mật khẩu mới đã được gửi vào email của bạn.',
+                'notice' => 'Trong trường hợp không nhận được mail trong 2p xin vui lòng kiểm tra lại email đã nhập!',
+                'code' => 200,
+                'data' => $teacher,
+                'meta' => null
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -189,7 +192,6 @@ class TeacherController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    
     }
 
 
@@ -275,7 +277,7 @@ class TeacherController extends Controller
         }
     }
 
-    public function editUser(Request $request,$id )
+    public function editUser(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:50',
@@ -283,7 +285,8 @@ class TeacherController extends Controller
             'gender' => 'required|in:MALE,FEMALE,OTHER',
             'phone' => 'nullable|string|max:11',
             'email' => 'nullable|email|max:100',
-            'address' => 'nullable|string|max:255'
+            'address' => 'nullable|string|max:255',
+            'image_link' => 'nullable|string' // Thêm trường image_link
         ], [
             'name.required' => 'Tên không được để trống.',
             'dob.required' => 'Ngày sinh không được để trống.',
@@ -309,7 +312,7 @@ class TeacherController extends Controller
 
         try {
             DB::beginTransaction();
-             // Tìm User với điều kiện is_deleted = false
+            // Tìm User với điều kiện is_deleted = false
             $user = User::where('id', $id)->where('is_deleted', false)->first();
             if (!$user) {
                 return response()->json([
@@ -317,7 +320,7 @@ class TeacherController extends Controller
                     'code' => 404
                 ], 404);
             }
-              // Kiểm tra nếu role không phải STUDENT
+            // Kiểm tra nếu role không phải TEACHER
             if ($user->role !== 'TEACHER') {
                 return response()->json([
                     'message' => 'Người dùng không có quyền cập nhật thông tin.',
@@ -325,8 +328,7 @@ class TeacherController extends Controller
                 ], 403);
             }
 
-            
-             // Kiểm tra email đã tồn tại chưa (trừ user hiện tại)
+            // Kiểm tra email đã tồn tại chưa (trừ user hiện tại)
             if (!empty($request->email) && Account::where('email', $request->email)->where('id', '!=', $user->account_id)->exists()) {
                 return response()->json([
                     'message' => 'Email đã tồn tại.',
@@ -351,6 +353,25 @@ class TeacherController extends Controller
                 'address' => $request->address
             ]);
 
+            // Upload ảnh lên Cloudinary nếu có
+            if (!empty($request->image_link)) {
+                // Thêm data URI nếu không có
+                if (strpos($request->image_link, 'data:image/') !== 0) {
+                    $request->image_link = 'data:image/png;base64,' . $request->image_link;
+                }
+
+                // Kiểm tra base64 hợp lệ
+                if ($this->isValidBase64($request->image_link)) {
+                    $imageUrl = $this->uploadImageToCloudinary($request->image_link);
+                    $user->update(['image_link' => $imageUrl]); // Cập nhật đường dẫn ảnh
+                } else {
+                    return response()->json([
+                        'message' => 'Image base64 không hợp lệ.',
+                        'code' => 400
+                    ], 400);
+                }
+            }
+
             // Tìm Account dựa vào account_id từ bảng User
             $account = Account::find($user->account_id);
             if ($account && !empty($request->email)) {
@@ -360,20 +381,62 @@ class TeacherController extends Controller
             }
             
             DB::commit();
+
+            // Trả về dữ liệu mà không có các trường deleted_at và is_deleted
             return response()->json([
                 'message' => 'Cập nhật thông tin người dùng thành công.',
-                'data' => null,
+                'data' => [
+                    'id' => $user->id,
+                    'account_id' => $user->account_id,
+                    'full_name' => $user->full_name,
+                    'birth_date' => $user->birth_date,
+                    'gender' => $user->gender,
+                    'phone' => $user->phone,
+                    'address' => $user->address,
+                    'image_link' => $user->image_link,
+                    'role' => $user->role,
+                    // Không bao gồm deleted_at và is_deleted
+                ],
                 'code' => 200
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Đã xảy ra lỗi khi tạo học sinh.',
+                'message' => 'Đã xảy ra lỗi khi cập nhật người dùng.',
                 'code' => 500,
                 'error' => $e->getMessage()
             ], 500);
         }
     }
     
+    private function isValidBase64($string)
+    {
+        // Kiểm tra xem chuỗi có phải là base64 hợp lệ không
+        return preg_match('/^data:image\/(\w+);base64,/', $string) && base64_decode(substr($string, strpos($string, ',') + 1), true) !== false;
+    }
 
+    private function uploadImageToCloudinary($base64Image)
+    {
+        try {
+            // Thêm data URI nếu không có
+            if (strpos($base64Image, 'data:image/') !== 0) {
+                $base64Image = 'data:image/png;base64,' . $base64Image;
+            }
+
+            // Kiểm tra base64 hợp lệ
+            if ($this->isValidBase64($base64Image)) {
+                $result = Cloudinary::upload($base64Image, [
+                    'resource_type' => 'image',
+                    'folder' => 'images',
+                    'timeout' => 300 // 5 minutes timeout
+                ]);
+                return $result->getSecurePath();; // Trả về URL của ảnh đã upload
+            } else {
+                throw new \Exception('Hình ảnh base64 không hợp lệ.');
+            }
+        } catch (\Exception $e) {
+            // Nếu có lỗi xảy ra, trả về 123
+            return 123;
+        }
+    }
 }
