@@ -27,7 +27,7 @@ class TeacherController extends Controller
                 ->where('is_deleted', false)
                 ->with([
                     'account:id,email', // Lấy email từ bảng account
-                    'diplomas:id,user_id,certificate_name' // Lấy danh sách chứng chỉ từ bảng diploma
+                    'diplomas:id,user_id,score,certificate_name' // Lấy danh sách chứng chỉ từ bảng diploma
                 ]);
     
         // Phân trang dữ liệu
@@ -47,7 +47,7 @@ class TeacherController extends Controller
                 'certificate' => $teacher->diplomas->map(function ($diploma) {
                     return [
                         'certificate_name' => $diploma->certificate_name,
-                        'score' => $diploma->score,
+                        'score' => $diploma->score
                     ];
                 })->toArray()
             ];

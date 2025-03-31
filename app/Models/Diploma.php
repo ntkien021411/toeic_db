@@ -19,6 +19,7 @@ class Diploma extends Model
 
     protected $casts = [
         'is_deleted' => 'boolean',
+        'score' => 'decimal:2', // Chuyển đổi score thành số thập phân với 2 chữ số thập phân
     ];
 
     public $timestamps = false; // Tự động cập nhật created_at và updated_at
