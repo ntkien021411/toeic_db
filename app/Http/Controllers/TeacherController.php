@@ -44,7 +44,12 @@ class TeacherController extends Controller
                 'email' => optional($teacher->account)->email, // Lấy email từ account (nếu có)
                 'address' => $teacher->address,
                 'avatar' => $teacher->image_link,
-                'certificate' => $teacher->diplomas->pluck('certificate_name')->toArray() // Lấy danh sách chứng chỉ
+                'certificate' => $teacher->diplomas->map(function ($diploma) {
+                    return [
+                        'certificate_name' => $diploma->certificate_name,
+                        'score' => $diploma->score,
+                    ];
+                })->toArray()
             ];
         });
     
