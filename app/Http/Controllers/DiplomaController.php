@@ -86,7 +86,7 @@ class DiplomaController extends Controller
      public function store(Request $request)
      {
          $validator = Validator::make($request->all(), [
-             'user_id' => 'required|exists:user,id',
+             'user_id' => 'required|exists:User,id',
              'certificate_name' => 'required|string|max:255',
              'score' => 'required|numeric|min:0',
              'level' => 'nullable|string|max:500',
