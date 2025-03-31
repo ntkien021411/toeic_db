@@ -31,7 +31,7 @@ class TeacherController extends Controller
                 ]);
     
         // Phân trang dữ liệu
-        $teachers = $query->paginate($pageSize, ['id','full_name', 'first_name', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
+        $teachers = $query->paginate($pageSize, ['id','full_name', 'first_name','image_link', 'last_name', 'birth_date', 'gender', 'phone', 'address', 'account_id'], 'page', $pageNumber);
     
         // Chuyển đổi dữ liệu theo format mong muốn
         $formattedTeachers = $teachers->map(function ($teacher) {
@@ -43,6 +43,7 @@ class TeacherController extends Controller
                 'phone' => $teacher->phone,
                 'email' => optional($teacher->account)->email, // Lấy email từ account (nếu có)
                 'address' => $teacher->address,
+                'avatar' => $teacher->image_link,
                 'certificate' => $teacher->diplomas->pluck('certificate_name')->toArray() // Lấy danh sách chứng chỉ
             ];
         });
