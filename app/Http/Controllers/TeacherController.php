@@ -47,7 +47,8 @@ class TeacherController extends Controller
                 'certificate' => $teacher->diplomas->map(function ($diploma) {
                     return [
                         'certificate_name' => $diploma->certificate_name,
-                        'score' => $diploma->score
+                        'score' => $diploma->score,
+                        'id' => $diploma->id
                     ];
                 })->toArray()
             ];
