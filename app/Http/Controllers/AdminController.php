@@ -149,7 +149,7 @@ class AdminController extends Controller
 
 
 
-        public function updateStatus(Request $request)
+    public function updateStatus(Request $request)
         {
             try {
                 // Validate input

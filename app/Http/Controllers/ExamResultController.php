@@ -108,26 +108,26 @@ class ExamResultController extends Controller
     }
 
     // Hàm để lấy exam_section_id dựa trên exam_code và part_number
-    private function getExamSectionId($examCode, $partNumber)
-    {
-        $examSection = ExamSection::where('exam_code', $examCode)
-            ->where('part_number', $partNumber)
-            ->first();
+    // private function getExamSectionId($examCode, $partNumber)
+    // {
+    //     $examSection = ExamSection::where('exam_code', $examCode)
+    //         ->where('part_number', $partNumber)
+    //         ->first();
 
-        return $examSection ? $examSection->id : null;
-    }
+    //     return $examSection ? $examSection->id : null;
+    // }
 
     /**
      * Tính điểm TOEIC dựa trên số câu trả lời đúng
      * Đây là phiên bản đơn giản - bạn có thể thêm logic tính điểm phức tạp hơn
      */
-    private function calculateTOEICScore($correctAnswers, $totalQuestions)
-    {
-        // Tính tỷ lệ phần trăm câu trả lời đúng
-        $percentage = ($correctAnswers / $totalQuestions) * 100;
-        // Chuyển đổi sang thang điểm TOEIC (0-990)
-        return round($percentage * 10);
-    }
+    // private function calculateTOEICScore($correctAnswers, $totalQuestions)
+    // {
+    //     // Tính tỷ lệ phần trăm câu trả lời đúng
+    //     $percentage = ($correctAnswers / $totalQuestions) * 100;
+    //     // Chuyển đổi sang thang điểm TOEIC (0-990)
+    //     return round($percentage * 10);
+    // }
 
     public function getStatistics()
     {

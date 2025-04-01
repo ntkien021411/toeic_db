@@ -133,6 +133,11 @@ class AuthController extends Controller
                     'fullName' => $user->full_name ?? '',
                     'username' => $account->username ?? '',
                     'email' => $account->email ?? '',
+                    'dob' => $user->birth_date, // Ngày sinh
+                    'gender' => $user->gender, // Giới tính
+                    'phone' => $user->phone, // Số điện thoại
+                    'address' => $user->address, // Địa chỉ
+                    'image_link' => $user->image_link, // Liên kết hình ảnh
                     'role' => $user->role,
                     'isAdmin' => $user->role === 'ADMIN',
                     'isClient' => $user->role !== 'ADMIN'
