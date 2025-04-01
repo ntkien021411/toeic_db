@@ -79,7 +79,7 @@ Route::prefix('api')->group(function () {
         Route::get('/students/list', [StudentController::class, 'listStudent']);
 
         Route::get('/diploma/list/{user_id}', [DiplomaController::class, 'index']);  // Xem danh sách tất cả bằng cấp hoặc của 1 giáo viên
-        Route::put('/diploma/edit-diploma-teacher/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
+        // Route::put('/diploma/edit-diploma-teacher/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
         
     });
 
