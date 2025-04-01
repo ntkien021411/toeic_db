@@ -97,7 +97,7 @@ Route::prefix('api')->group(function () {
         // DIPLOMA
        
         Route::post('/diploma/add-diploma-teacher', [DiplomaController::class, 'store']); // Thêm bằng cấp
-        Route::put('/diploma/edit-diploma-teacher/{id}', [DiplomaController::class, 'updateAdmin']); // Sửa và xóa mềm bằng cấp
+        Route::put('/diploma/edit-diploma/{id}', [DiplomaController::class, 'updateAdmin']); // Sửa và xóa mềm bằng cấp
         Route::delete('/diploma/delete', [DiplomaController::class, 'softDelete']); // Xem chi tiết bằng cấp   
 
 
