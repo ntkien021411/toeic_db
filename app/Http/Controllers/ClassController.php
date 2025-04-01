@@ -284,4 +284,58 @@ class ClassController extends Controller
         }
     }
 
+    public function delete(Request $request)
+    {
+        // Validate dữ liệu đầu vào
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer'
+        ], [
+            'ids.required' => 'Danh sách ID là bắt buộc.',
+            'ids.array' => 'Danh sách ID phải là một mảng.',
+            'ids.min' => 'Phải có ít nhất một ID.',
+            'ids.*.integer' => 'ID phải là số nguyên.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Dữ liệu nhập vào không hợp lệ.',
+                'code' => 400,
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            $now = now();
+            $requestedIds = $request->ids;
+
+            // Lấy danh sách lớp học có tồn tại
+            $existingClasses = Classes::whereIn('id', $requestedIds)->where('is_deleted', false)->get();
+            $existingIds = $existingClasses->pluck('id')->toArray();
+            $invalidIds = array_diff($requestedIds, $existingIds);
+
+            // Cập nhật trường is_deleted và deleted_at cho các lớp học tồn tại
+            Classes::whereIn('id', $existingIds)->update([
+                'is_deleted' => true,
+                'deleted_at' => $now
+            ]);
+
+            return response()->json([
+                'message' => 'Xóa lớp học thành công.',
+                'code' => 200,
+                'data' => [
+                    'deleted_classes' => $existingIds,
+                    'invalid_ids' => $invalidIds
+                ],
+                'meta' => null
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi trong quá trình xóa lớp học.',
+                'code' => 500,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
