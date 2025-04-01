@@ -69,7 +69,7 @@ Route::prefix('api')->group(function () {
 
     //Quyền giáo viên và admin 
     Route::middleware(['checkAdminTeacher'])->group(function () {
-        Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'editUser']); // Sửa giáo viên
+        Route::put('/teachers/edit-teacher-own/{id}', [TeacherController::class, 'editUser']); // Sửa giáo viên
         Route::put('/teachers/edit-teacher-image/{id}', [TeacherController::class, 'editTeacher']); 
         //Danh sách lớp học 
         Route::get('/classes/list', [ClassController::class, 'listClass']); 
@@ -82,7 +82,7 @@ Route::prefix('api')->group(function () {
     //Chỉ Admin dùng được
     Route::middleware(['checkAdmin'])->group(function () {
 
-
+        Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'edit']); // Sửa giáo viên
 
         //TEACHER Xem danh sách giáo viên 
         Route::get('/teachers/list', [TeacherController::class, 'listTeacher']); 

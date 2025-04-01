@@ -524,4 +524,139 @@ class TeacherController extends Controller
             ], 500);
         }
     }
+
+    public function edit(Request $request, $id)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:50',
+            'dob' => 'required|date',
+            'gender' => 'required|in:MALE,FEMALE,OTHER',
+            'phone' => 'nullable|string|max:11',
+            'email' => 'nullable|email|max:100',
+            'address' => 'nullable|string|max:255',
+            'image_link' => 'nullable|string' // Thêm trường image_link
+        ], [
+            'name.required' => 'Tên không được để trống.',
+            'dob.required' => 'Ngày sinh không được để trống.',
+            'dob.date' => 'Ngày sinh không hợp lệ.',
+            'gender.required' => 'Giới tính không được để trống.',
+            'gender.in' => 'Giới tính chỉ được là MALE, FEMALE hoặc OTHER.',
+            'phone.unique' => 'Số điện thoại đã tồn tại.',
+            'phone.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
+            'email.email' => 'Email không hợp lệ.',
+            'email.unique' => 'Email đã tồn tại.',
+            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => 400,
+                'data' => null,
+                'meta' => null,
+                'message_array' =>  $validator->errors()
+            ], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+            // Tìm User với điều kiện is_deleted = false
+            $user = User::where('id', $id)->where('is_deleted', false)->first();
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Không tìm thấy người dùng hoặc người dùng đã bị xóa.',
+                    'code' => 404
+                ], 404);
+            }
+            // Kiểm tra nếu role không phải TEACHER
+            if ($user->role !== 'TEACHER') {
+                return response()->json([
+                    'message' => 'Người dùng không có quyền cập nhật thông tin.',
+                    'code' => 403
+                ], 403);
+            }
+
+            // Kiểm tra email đã tồn tại chưa (trừ user hiện tại)
+            if (!empty($request->email) && Account::where('email', $request->email)->where('id', '!=', $user->account_id)->exists()) {
+                return response()->json([
+                    'message' => 'Email đã tồn tại.',
+                    'code' => 400
+                ], 400);
+            }
+
+            // Kiểm tra số điện thoại đã tồn tại chưa (trừ user hiện tại)
+            if (!empty($request->phone) && User::where('phone', $request->phone)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'message' => 'Số điện thoại đã tồn tại.',
+                    'code' => 400
+                ], 400);
+            }
+
+            // Cập nhật User
+            $user->update([
+                'full_name' => $request->name,
+                'birth_date' => $request->dob,
+                'gender' => $request->gender,
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'image_link' => $request->image_link 
+            ]);
+
+            // // Upload ảnh lên Cloudinary nếu có
+            // if (!empty($request->image_link)) {
+            //     // Thêm data URI nếu không có
+            //     if (strpos($request->image_link, 'data:image/') !== 0) {
+            //         $request->image_link = 'data:image/png;base64,' . $request->image_link;
+            //     }
+
+            //     // Kiểm tra base64 hợp lệ
+            //     if ($this->isValidBase64($request->image_link)) {
+            //         $imageUrl = $this->uploadImageToCloudinary($request->image_link);
+            //         $user->update(['image_link' => $imageUrl]); // Cập nhật đường dẫn ảnh
+            //     } else {
+            //         return response()->json([
+            //             'message' => 'Image base64 không hợp lệ.',
+            //             'code' => 400
+            //         ], 400);
+            //     }
+            // }
+
+            // Tìm Account dựa vào account_id từ bảng User
+            $account = Account::find($user->account_id);
+            if ($account && !empty($request->email)) {
+                $account->update([
+                    'email' => $request->email
+                ]);
+            }
+            
+            DB::commit();
+
+            // Trả về dữ liệu mà không có các trường deleted_at và is_deleted
+            return response()->json([
+                'message' => 'Cập nhật thông tin người dùng thành công.',
+                'data' => [
+                    'id' => $user->id,
+                    'account_id' => $user->account_id,
+                    'full_name' => $user->full_name,
+                    'birth_date' => $user->birth_date,
+                    'gender' => $user->gender,
+                    'phone' => $user->phone,
+                    'address' => $user->address,
+                    'image_link' => $user->image_link,
+                    'role' => $user->role,
+                    // Không bao gồm deleted_at và is_deleted
+                ],
+                'code' => 200
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Đã xảy ra lỗi khi cập nhật người dùng.',
+                'code' => 500,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
 }
