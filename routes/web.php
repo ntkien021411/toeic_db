@@ -69,6 +69,7 @@ Route::prefix('api')->group(function () {
 
     //Quyền giáo viên và admin 
     Route::middleware(['checkAdminTeacher'])->group(function () {
+        Route::get('/teachers/list', [TeacherController::class, 'listTeacher']); 
         Route::put('/teachers/edit-teacher-own/{id}', [TeacherController::class, 'editUser']); // Sửa giáo viên
         Route::put('/teachers/edit-teacher-image/{id}', [TeacherController::class, 'editTeacher']); 
         //Danh sách lớp học 
@@ -83,9 +84,9 @@ Route::prefix('api')->group(function () {
     Route::middleware(['checkAdmin'])->group(function () {
 
         Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'edit']); // Sửa giáo viên
+        Route::put('/teachers/edit-image/{id}', [TeacherController::class, 'editTeacherAdmin']); 
 
         //TEACHER Xem danh sách giáo viên 
-        Route::get('/teachers/list', [TeacherController::class, 'listTeacher']); 
         Route::post('/teachers/add-teacher', [TeacherController::class, 'createUser']); // Thêm giáo viên
         Route::delete('/teachers/delete', [TeacherController::class, 'delete']); 
 
