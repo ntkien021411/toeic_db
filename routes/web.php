@@ -77,6 +77,10 @@ Route::prefix('api')->group(function () {
         //Chi tiết lớp học
         Route::get('/classes/detail/{class_id}', [ClassUserController::class, 'getClassDetail']);
         Route::get('/students/list', [StudentController::class, 'listStudent']);
+
+        Route::get('/diploma/list/{user_id}', [DiplomaController::class, 'index']);  // Xem danh sách tất cả bằng cấp hoặc của 1 giáo viên
+        Route::put('/diploma/edit-diploma-teacher/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
+        
     });
 
     // ✅ Bảo vệ API bằng middleware 
@@ -91,9 +95,9 @@ Route::prefix('api')->group(function () {
         Route::delete('/teachers/delete', [TeacherController::class, 'delete']); 
 
         // DIPLOMA
-        Route::get('/diploma/list/{user_id}', [DiplomaController::class, 'index']);  // Xem danh sách tất cả bằng cấp hoặc của 1 giáo viên
+       
         Route::post('/diploma/add-diploma-teacher', [DiplomaController::class, 'store']); // Thêm bằng cấp
-        Route::put('/diploma/edit-diploma-teacher/{id}', [DiplomaController::class, 'update']); // Sửa và xóa mềm bằng cấp
+        Route::put('/diploma/edit-diploma-teacher/{id}', [DiplomaController::class, 'updateAdmin']); // Sửa và xóa mềm bằng cấp
         Route::delete('/diploma/delete', [DiplomaController::class, 'softDelete']); // Xem chi tiết bằng cấp   
 
 
