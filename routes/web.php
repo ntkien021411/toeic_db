@@ -70,6 +70,7 @@ Route::prefix('api')->group(function () {
     //Quyền giáo viên và admin 
     Route::middleware(['checkAdminTeacher'])->group(function () {
         Route::put('/teachers/edit-teacher/{id}', [TeacherController::class, 'editUser']); // Sửa giáo viên
+        Route::put('/teachers/edit-teacher-image/{id}', [TeacherController::class, 'editTeacher']); 
         //Danh sách lớp học 
         Route::get('/classes/list', [ClassController::class, 'listClass']); 
         //Chi tiết lớp học

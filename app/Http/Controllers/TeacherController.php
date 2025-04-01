@@ -461,4 +461,67 @@ class TeacherController extends Controller
             return 123;
         }
     }
+
+    public function editTeacher(Request $request, $id)
+    {
+        // Lấy thông tin người dùng đã được xác thực từ middleware
+        $authenticatedUser = $request->attributes->get('authenticatedUser');
+
+        // Kiểm tra xem ID từ token có trùng với ID truyền vào không
+        if ($authenticatedUser->id !== (int)$id) {
+            return response()->json([
+                'message' => 'Bạn không có quyền cập nhật thông tin của người dùng khác.',
+                'code' => 403
+            ], 403);
+        }
+
+        // Validate dữ liệu đầu vào
+        $validator = Validator::make($request->all(), [
+            'image_link' => 'required|string' // Chỉ cần trường image_link
+        ], [
+            'image_link.required' => 'Ảnh không được để trống.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Dữ liệu nhập vào không hợp lệ',
+                'code' => 400,
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Tìm User với điều kiện is_deleted = false
+            $user = User::where('id', $id)->where('is_deleted', false)->first();
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Không tìm thấy người dùng hoặc người dùng đã bị xóa.',
+                    'code' => 404
+                ], 404);
+            }
+
+            // Cập nhật đường dẫn ảnh
+            $user->update(['image_link' => $request->image_link]); // Cập nhật đường dẫn ảnh
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Cập nhật ảnh thành công.',
+                'data' => [
+                    'id' => $user->id,
+                    'image_link' => $user->image_link,
+                ],
+                'code' => 200
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Đã xảy ra lỗi khi cập nhật ảnh.',
+                'code' => 500,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
