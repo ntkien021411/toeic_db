@@ -51,6 +51,7 @@ class DiplomaController extends Controller
 
         // Truy vấn danh sách chứng chỉ theo user_id với phân trang
         $diplomas = Diploma::where('user_id', $user_id)
+            ->where('is_deleted', false)
             ->select('id', 'user_id', 'certificate_name', 'score', 'level', 'issued_by', 'issue_date', 'expiry_date', 'certificate_image') // Chỉ lấy các trường cần thiết
             ->paginate($pageSize, ['*'], 'page', $pageNumber);
 
