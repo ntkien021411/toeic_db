@@ -110,7 +110,7 @@ Route::prefix('api')->group(function () {
         //CLASS Thêm lớp học 
         Route::post('/class', [ClassController::class, 'store']);  // Tạo lớp học
         Route::put('/class/edit-class/{id}', [ClassController::class, 'edit']);  // Sửa lớp học
-        Route::deleted('/classes/delete', [ClassController::class, 'delete']);  // Sửa lớp học
+        Route::delete('/classes/delete', [ClassController::class, 'delete']);  // Sửa lớp học
         //Tạo môn học
         //IMPORT EXCEL 
         // API 2: Import dữ liệu từ folder
