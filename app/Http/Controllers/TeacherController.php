@@ -27,7 +27,10 @@ class TeacherController extends Controller
                 ->where('is_deleted', false)
                 ->with([
                     'account:id,email', // Lấy email từ bảng account
-                    'diplomas:id,user_id,score,certificate_name' // Lấy danh sách chứng chỉ từ bảng diploma
+                    'diplomas' => function ($query) {
+                        $query->where('is_deleted', false) // Thêm điều kiện is_deleted bằng false
+                              ->select('id', 'user_id', 'score', 'certificate_name'); // Chỉ lấy các trường cần thiết
+                    }
                 ]);
     
         // Phân trang dữ liệu

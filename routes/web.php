@@ -115,6 +115,9 @@ Route::prefix('api')->group(function () {
         Route::post('/read-excel/{part_number}', [ExcelController::class, 'readExcel']);
         //Tạo câu hỏi cho bài thi toeic
         Route::post('/create-question/{exam_code}/{part_number}', [ExcelController::class, 'importQuestions']);
+        //Sửa bài thi 
+        Route::put('/update-exam-section/{id}', [ExamSectionController::class, 'editExamSection']);
+
         //Xem danh sách câu hỏi của bài thi toeic
         // Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
 
