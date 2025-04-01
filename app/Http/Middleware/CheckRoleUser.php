@@ -35,9 +35,12 @@ class CheckRoleUser
         }
 
         // Kiểm tra role có thuộc TEACHER hoặc STUDENT không
-        if (!in_array($user->role, ['TEACHER', 'STUDENT'])) {
+        if (!in_array($user->role, ['TEACHER', 'ADMIN'])) {
             return response()->json(['message' => 'Bạn không có quyền truy cập API này'], Response::HTTP_FORBIDDEN);
         }
+        // Gán thông tin người dùng vào request để sử dụng trong controller
+        $request->attributes->set('authenticatedUser', $user);
+
 
         return $next($request);
     }

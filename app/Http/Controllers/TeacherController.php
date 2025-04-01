@@ -145,30 +145,30 @@ class TeacherController extends Controller
                 'active_date' => now(),
             ]);
 
-            // Upload ảnh lên Cloudinary nếu có
-            $imageUrl = null;
-            if (!empty($request->image_link)) {
-                // Thêm data URI nếu không có
-                if (strpos($request->image_link, 'data:image/') !== 0) {
-                    $request->image_link = 'data:image/png;base64,' . $request->image_link;
-                }
+            // // Upload ảnh lên Cloudinary nếu có
+            // $imageUrl = null;
+            // if (!empty($request->image_link)) {
+            //     // Thêm data URI nếu không có
+            //     if (strpos($request->image_link, 'data:image/') !== 0) {
+            //         $request->image_link = 'data:image/png;base64,' . $request->image_link;
+            //     }
 
-                // Kiểm tra base64 hợp lệ
-                if ($this->isValidBase64($request->image_link)) {
-                    $imageUrl = $this->uploadImageToCloudinary($request->image_link);
-                    if ($imageUrl === 123) {
-                        return response()->json([
-                            'message' => 'Không thể upload hình ảnh.',
-                            'code' => 400
-                        ], 400);
-                    }
-                } else {
-                    return response()->json([
-                        'message' => 'Image base64 không hợp lệ.',
-                        'code' => 400
-                    ], 400);
-                }
-            }
+            //     // Kiểm tra base64 hợp lệ
+            //     if ($this->isValidBase64($request->image_link)) {
+            //         $imageUrl = $this->uploadImageToCloudinary($request->image_link);
+            //         if ($imageUrl === 123) {
+            //             return response()->json([
+            //                 'message' => 'Không thể upload hình ảnh.',
+            //                 'code' => 400
+            //             ], 400);
+            //         }
+            //     } else {
+            //         return response()->json([
+            //             'message' => 'Image base64 không hợp lệ.',
+            //             'code' => 400
+            //         ], 400);
+            //     }
+            // }
 
             // Tạo giáo viên mới
             $teacher = User::create([
@@ -180,7 +180,7 @@ class TeacherController extends Controller
                 'address' => $request->address,
                 'role' => 'TEACHER',
                 'is_deleted' => false,
-                'image_link' => $imageUrl // Lưu đường dẫn ảnh
+                'image_link' => $request->image_link // Lưu đường dẫn ảnh
             ]);
 
             DB::commit();
@@ -289,6 +289,17 @@ class TeacherController extends Controller
 
     public function editUser(Request $request, $id)
     {
+        // Lấy thông tin người dùng đã được xác thực từ middleware
+        $authenticatedUser = $request->attributes->get('authenticatedUser');
+
+        // Kiểm tra xem ID từ token có trùng với ID truyền vào không
+        if ($authenticatedUser->id !== (int)$id) {
+            return response()->json([
+                'message' => 'Bạn không có quyền cập nhật thông tin của người dùng khác.',
+                'code' => 403
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:50',
             'dob' => 'required|date',
@@ -360,27 +371,28 @@ class TeacherController extends Controller
                 'birth_date' => $request->dob,
                 'gender' => $request->gender,
                 'phone' => $request->phone,
-                'address' => $request->address
+                'address' => $request->address,
+                'image_link' => $request->image_link 
             ]);
 
-            // Upload ảnh lên Cloudinary nếu có
-            if (!empty($request->image_link)) {
-                // Thêm data URI nếu không có
-                if (strpos($request->image_link, 'data:image/') !== 0) {
-                    $request->image_link = 'data:image/png;base64,' . $request->image_link;
-                }
+            // // Upload ảnh lên Cloudinary nếu có
+            // if (!empty($request->image_link)) {
+            //     // Thêm data URI nếu không có
+            //     if (strpos($request->image_link, 'data:image/') !== 0) {
+            //         $request->image_link = 'data:image/png;base64,' . $request->image_link;
+            //     }
 
-                // Kiểm tra base64 hợp lệ
-                if ($this->isValidBase64($request->image_link)) {
-                    $imageUrl = $this->uploadImageToCloudinary($request->image_link);
-                    $user->update(['image_link' => $imageUrl]); // Cập nhật đường dẫn ảnh
-                } else {
-                    return response()->json([
-                        'message' => 'Image base64 không hợp lệ.',
-                        'code' => 400
-                    ], 400);
-                }
-            }
+            //     // Kiểm tra base64 hợp lệ
+            //     if ($this->isValidBase64($request->image_link)) {
+            //         $imageUrl = $this->uploadImageToCloudinary($request->image_link);
+            //         $user->update(['image_link' => $imageUrl]); // Cập nhật đường dẫn ảnh
+            //     } else {
+            //         return response()->json([
+            //             'message' => 'Image base64 không hợp lệ.',
+            //             'code' => 400
+            //         ], 400);
+            //     }
+            // }
 
             // Tìm Account dựa vào account_id từ bảng User
             $account = Account::find($user->account_id);
