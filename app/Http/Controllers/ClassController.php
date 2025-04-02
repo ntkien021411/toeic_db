@@ -38,14 +38,14 @@ class ClassController extends Controller
             ], 400);
         }
     $validator = Validator::make($request->all(), [
-        'class_code'          => 'required|string:Room,class_code',
+        'class_code'          => 'required|string|unique:Room,class_code,',
         'class_type'          => 'required|string|in:Beginner,Toeic A,Toeic B',
         'start_date'          => 'required|date',
         'end_date'            => 'required|date|after_or_equal:start_date',
         'start_time'          => 'required|date_format:H:i',
         'end_time'            => 'required|date_format:H:i|after:start_time',
         'days'                => 'required|array|min:1',
-        'days.*'              => ['required', 'regex:/^\d{2}-\d{2}-\d{4}$/'], // dd-mm-yyyy
+        // 'days.*'              => ['required', 'regex:/^\d{2}-\d{2}-\d{4}$/'], // dd-mm-yyyy
         'number_of_students'  => 'required|integer|min:1',
         'teacher'             => 'required|integer|exists:User,id'
     ], [
@@ -88,9 +88,9 @@ class ClassController extends Controller
 
 
     try {
-        $validatedDays = array_map(function ($day) {
-            return \Carbon\Carbon::createFromFormat('d-m-Y', $day)->format('d-m-Y');
-        }, $request->days);
+        // $validatedDays = array_map(function ($day) {
+        //     return \Carbon\Carbon::createFromFormat('d-m-Y', $day)->format('d-m-Y');
+        // }, $request->days);
         
         $class = Classes::create([
             'class_code'         => $request->class_code,
@@ -99,7 +99,7 @@ class ClassController extends Controller
             'end_date'           => $request->end_date,
             'start_time'         => $request->start_time,
             'end_time'           => $request->end_time,
-            'days'               => implode(',', $validatedDays), // Chuyển thành "dd/mm/yyyy,dd/mm/yyyy"
+            'days'               => implode(',', $request->days), 
             'student_count' => $request->number_of_students,
             'teacher_id'         => $request->teacher
         ]);
@@ -115,7 +115,7 @@ class ClassController extends Controller
                 'start_time'         => date('H:i', strtotime($class->start_time)),
                 'end_time'           => date('H:i', strtotime($class->end_time)),
                 'days'               => explode(',', $class->days), // Chuyển chuỗi thành mảng ["dd/mm/yyyy", "dd/mm/yyyy"]
-                'number_of_students' => $class->number_of_students,
+                'number_of_students' => $class->student_count,
                 'teacher'            => $class->teacher_id
             ],
             'meta' => null
@@ -198,7 +198,7 @@ class ClassController extends Controller
             'start_time'          => 'required|date_format:H:i',
             'end_time'            => 'required|date_format:H:i|after:start_time',
             'days'                => 'required|array|min:1',
-            'days.*'              => ['required', 'regex:/^\d{2}-\d{2}-\d{4}$/'], // dd-mm-yyyy
+            // 'days.*'              => ['required', 'regex:/^\d{2}-\d{2}-\d{4}$/'], // dd-mm-yyyy
             'number_of_students'  => 'required|integer|min:1',
             'teacher'             => 'required|integer|exists:User,id'
         ], [
@@ -219,8 +219,8 @@ class ClassController extends Controller
             'days.required'            => 'Danh sách ngày học là bắt buộc.',
             'days.array'               => 'Danh sách ngày học phải là một mảng.',
             'days.min'                 => 'Lớp học phải có ít nhất một ngày học.',
-            'days.*.required'          => 'Ngày học không được để trống.',
-            'days.*.regex'             => 'Ngày học phải có định dạng dd-mm-yyyy.',
+            // 'days.*.required'          => 'Ngày học không được để trống.',
+            // 'days.*.regex'             => 'Ngày học phải có định dạng dd-mm-yyyy.',
             'number_of_students.required' => 'Số lượng học viên là bắt buộc.',
             'number_of_students.integer'  => 'Số lượng học viên phải là số nguyên.',
             'number_of_students.min'      => 'Số lượng học viên phải lớn hơn hoặc bằng 1.',
@@ -240,9 +240,9 @@ class ClassController extends Controller
         }
 
         try {
-            $validatedDays = array_map(function ($day) {
-                return \Carbon\Carbon::createFromFormat('d-m-Y', $day)->format('d-m-Y');
-            }, $request->days);
+            // $validatedDays = array_map(function ($day) {
+            //     return \Carbon\Carbon::createFromFormat('d-m-Y', $day)->format('d-m-Y');
+            // }, $request->days);
             
             $class->update([
                 'class_code'         => $request->class_code,
@@ -251,7 +251,7 @@ class ClassController extends Controller
                 'end_date'           => $request->end_date,
                 'start_time'         => $request->start_time,
                 'end_time'           => $request->end_time,
-                'days'               => implode(',', $validatedDays),
+                'days'               => implode(',', $request->days),
                 'student_count'      => $request->number_of_students,
                 'teacher_id'         => $request->teacher
             ]);
