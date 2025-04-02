@@ -49,12 +49,12 @@ class ExamSectionController extends Controller
                 // Xử lý tên exam để bỏ phần "Part X - ..."
                 $examName = preg_replace('/\s*Part\s+\d+\s*-\s*.+$/', '', $exam->exam_name);
                 
-                return [
+            return [
                     'exam_code' => $exam->exam_code,
                     'exam_name' => $examName,
                     'duration' => 120,
                     'section_name' => 'Full',
-                    'part_number' => 'Full',
+                    'part_number' => 0,
                     'question_count' => 200,
                     'max_score' => 990,
                     'duration' => 200,
@@ -305,54 +305,18 @@ class ExamSectionController extends Controller
 
     public function getQuestionsByExamSection($exam_code, $part_number)
     {
-        try {
-            // Parse part_number to integer
-            $part_number = (int) $part_number;
-
-            // Validate input
-            $validator = Validator::make([
-                'exam_code' => $exam_code,
-                'part_number' => $part_number
-            ], [
-                'exam_code' => 'required|string',
-                'part_number' => 'required|integer|min:1|max:7'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Dữ liệu đầu vào không hợp lệ.',
-                    'code' => 400,
-                    'data' => null,
-                    'errors' => $validator->errors()
-                ], 400);
-            }
-
-            // Validate exam section exists
-            $examSection = ExamSection::where('exam_code', $exam_code)
-                ->where('part_number', $part_number)
+        // Kiểm tra xem part_number có phải là 0 không
+        if ($part_number == 0) {
+            // Lấy tất cả exam_section_id cho các phần từ 1 đến 7
+            $examSections = ExamSection::where('exam_code', $exam_code)
+                ->where('part_number', '>=', 1)
+                ->where('part_number', '<=', 7)
                 ->where('is_deleted', false)
-                ->select([
-                    'id',
-                    'exam_code',
-                    'exam_name',
-                    'section_name',
-                    'part_number',
-                    'question_count',
-                    'duration',
-                    'max_score'
-                ])
-                ->first();
+                ->pluck('id'); // Lấy danh sách id của các phần thi
 
-            if (!$examSection) {
-                return response()->json([
-                    'message' => 'Không tìm thấy phần thi.',
-                    'code' => 404,
-                    'data' => null
-                ], 404);
-            }
-
-            // Lấy danh sách câu hỏi theo exam_section_id
-            $questions = Question::where('exam_section_id', $examSection->id)
+            // Lấy tất cả câu hỏi dựa trên exam_section_id
+            $questions = Question::whereIn('exam_section_id', $examSections)
+                ->where('is_deleted', false) // Chỉ lấy câu hỏi chưa bị xóa
                 ->select([
                     'id',
                     'exam_section_id',
@@ -370,7 +334,45 @@ class ExamSectionController extends Controller
                 ])
                 ->orderBy('question_number', 'asc')
                 ->get();
+        } else {
+            // Lấy câu hỏi cho phần cụ thể
+            $examSection = ExamSection::where('exam_code', $exam_code)
+                ->where('part_number', $part_number)
+                ->where('is_deleted', false)
+                ->select(['id'])
+                ->first();
 
+            if (!$examSection) {
+                return response()->json([
+                    'message' => 'Không tìm thấy phần thi.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
+
+            // Lấy danh sách câu hỏi theo exam_section_id
+            $questions = Question::where('exam_section_id', $examSection->id)
+                ->where('is_deleted', false) // Chỉ lấy câu hỏi chưa bị xóa
+                ->select([
+                    'id',
+                    'exam_section_id',
+                    'question_number',
+                    'part_number',
+                    'question_text',
+                    'option_a',
+                    'option_b',
+                    'option_c',
+                    'option_d',
+                    'correct_answer',
+                    'explanation',
+                    'audio_url',
+                    'image_url'
+                ])
+                ->orderBy('question_number', 'asc')
+                ->get();
+        }
+
+        // Kiểm tra xem có câu hỏi nào không
             if ($questions->isEmpty()) {
                 return response()->json([
                     'message' => 'Không tìm thấy câu hỏi nào cho phần thi này.',
@@ -383,6 +385,18 @@ class ExamSectionController extends Controller
             $groupedQuestions = [];
             $questionsArray = $questions->toArray();
 
+        // Nhóm câu hỏi cho part_number = 0
+        if ($part_number == 0) {
+            // Nhóm câu hỏi theo logic tương tự như các phần khác
+            foreach ($questionsArray as $question) {
+                $partNum = $question['part_number'];
+                if (!isset($groupedQuestions[$partNum])) {
+                    $groupedQuestions[$partNum] = []; // Khởi tạo mảng cho part_number
+                }
+                $groupedQuestions[$partNum][] = $question; // Thêm câu hỏi vào nhóm tương ứng
+            }
+        } else {
+            // Nhóm câu hỏi cho các part cụ thể
             switch ($part_number) {
                 case 1:
                 case 5:
@@ -434,27 +448,13 @@ class ExamSectionController extends Controller
                     }
                     break;
             }
+            }
 
         return response()->json([
-                'message' => 'Lấy danh sách câu hỏi thành công.',
-                'code' => 200,
-                'data' => [
-                    'exam_section' => $examSection,
-                    'questions' => $groupedQuestions
-                ],
-                'meta' => [
-                    'total_questions' => $questions->count(),
-                    'total_groups' => count($groupedQuestions)
-                ]
+            'message' => 'Lấy câu hỏi thành công.',
+            'code' => 200,
+            'data' => $groupedQuestions
         ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Lỗi khi lấy danh sách câu hỏi: ' . $e->getMessage(),
-                'code' => 500,
-                'data' => null
-            ], 500);
-        }
     }
 
 
@@ -477,7 +477,9 @@ class ExamSectionController extends Controller
                         $sectionName = ($i >= 1 && $i <= 4) ? 'Listening' : 'Reading';
                         $questionCount = ($i === 1) ? 6 : (($i === 2) ? 25 : (($i === 3) ? 39 : (($i === 4) ? 30 : (($i === 5) ? 30 : (($i === 6) ? 16 : 54)))));
                         $duration = ($i === 1) ? 6 : (($i === 2) ? 20 : (($i === 3) ? 30 : (($i === 4) ? 30 : (($i === 5) ? 25 : (($i === 6) ? 15 : 55)))));
-
+                        // Tính toán max_score dựa trên số câu hỏi
+                        $pointsPerQuestion = 5; // Điểm cho mỗi câu hỏi
+                        $maxScore = $questionCount * $pointsPerQuestion;
                         ExamSection::create([
                             'exam_code' => $request->exam_code,
                             'part_number' => $i,
@@ -485,7 +487,7 @@ class ExamSectionController extends Controller
                             'section_name' => $sectionName,
                             'question_count' => $questionCount,
                             'duration' => $duration,
-                            'max_score' => $request->max_score, // Giữ lại max_score từ request
+                            'max_score' => $maxScore, // Giữ lại max_score từ request
                             'type' => $request->type, // Giữ lại type từ request
                             'is_Free' => 0, // Mặc định là 0
                         ]);
@@ -503,7 +505,8 @@ class ExamSectionController extends Controller
                             $sectionName = ($i >= 1 && $i <= 4) ? 'Listening' : 'Reading';
                             $questionCount = ($i === 1) ? 6 : (($i === 2) ? 25 : (($i === 3) ? 39 : (($i === 4) ? 30 : (($i === 5) ? 30 : (($i === 6) ? 16 : 54)))));
                             $duration = ($i === 1) ? 6 : (($i === 2) ? 20 : (($i === 3) ? 30 : (($i === 4) ? 30 : (($i === 5) ? 25 : (($i === 6) ? 15 : 55)))));
-
+                            $pointsPerQuestion = 5; // Điểm cho mỗi câu hỏi
+                            $maxScore = $questionCount * $pointsPerQuestion;
                             ExamSection::create([
                                 'exam_code' => $request->exam_code,
                                 'part_number' => $i,
@@ -511,7 +514,7 @@ class ExamSectionController extends Controller
                                 'section_name' => $sectionName,
                                 'question_count' => $questionCount,
                                 'duration' => $duration,
-                                'max_score' => $request->max_score, // Giữ lại max_score từ request
+                                'max_score' => $maxScore, // Giữ lại max_score từ request
                                 'type' => $request->type, // Giữ lại type từ request
                                 'is_Free' => 0, // Mặc định là 0
                             ]);
@@ -843,7 +846,7 @@ class ExamSectionController extends Controller
                     'type' => $examSection->type,
                     'is_Free' => $examSection->is_Free
                 ]
-            ], 200);
+        ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -854,7 +857,7 @@ class ExamSectionController extends Controller
             ], 500);
         }
     }
-
+    
     /**
      * Xóa nhiều exam section
      * 
