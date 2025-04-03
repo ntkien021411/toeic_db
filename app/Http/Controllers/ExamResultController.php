@@ -108,14 +108,14 @@ class ExamResultController extends Controller
     }
 
     // Hàm để lấy exam_section_id dựa trên exam_code và part_number
-    // private function getExamSectionId($examCode, $partNumber)
-    // {
-    //     $examSection = ExamSection::where('exam_code', $examCode)
-    //         ->where('part_number', $partNumber)
-    //         ->first();
+    private function getExamSectionId($examCode, $partNumber)
+    {
+        $examSection = ExamSection::where('exam_code', $examCode)
+            ->where('part_number', $partNumber)
+            ->first();
 
-    //     return $examSection ? $examSection->id : null;
-    // }
+        return $examSection ? $examSection->id : null;
+    }
 
     /**
      * Tính điểm TOEIC dựa trên số câu trả lời đúng
