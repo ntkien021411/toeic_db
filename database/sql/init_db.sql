@@ -602,3 +602,60 @@ INSERT INTO Exam_Result (user_id, exam_section_id, score, correct_answers, wrong
 (6, 1, 26, 6, 0, 3, 0, 3, 0, NOW(), NOW(), NULL, FALSE),  -- User 6, Exam Section 1
 (6, 2, 20, 5, 1, 2, 1, 3, 0, NOW(), NOW(), NULL, FALSE),  -- User 6, Exam Section 2
 (6, 3, 30, 10, 0, 5, 0, 5, 0, NOW(), NOW(), NULL, FALSE); -- User 6, Exam Section 3
+
+-- 10. Bảng Exam_Answers (Câu trả lời cho các câu hỏi trong các phần thi)
+CREATE TABLE Exam_Answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    exam_section_id INT NOT NULL,
+    question_number INT NOT NULL,
+    answer CHAR(1) CHECK (answer IN ('A', 'B', 'C', 'D')), -- Assuming answers are A, B, C, or D
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT fk_exam_answers_user FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
+    CONSTRAINT fk_exam_answers_exam_section FOREIGN KEY (exam_section_id) REFERENCES Exam_Section(id) ON DELETE CASCADE
+);
+
+-- Insert answers for User 7
+INSERT INTO Exam_Answers (user_id, exam_section_id, question_number, answer) VALUES
+(7, 3, 1, 'B'),
+(7, 3, 2, 'A'),
+(7, 3, 3, 'C'),
+(7, 4, 1, 'B'),
+(7, 4, 2, 'C'),
+(7, 4, 3, 'A'),
+(7, 5, 1, 'A'),
+(7, 5, 2, 'B'),
+(7, 5, 3, 'C'),
+(7, 5, 4, 'D'),
+(7, 5, 5, 'A');
+
+-- Insert answers for User 8
+INSERT INTO Exam_Answers (user_id, exam_section_id, question_number, answer) VALUES
+(8, 3, 1, 'A'),
+(8, 3, 2, 'B'),
+(8, 3, 3, 'D'),
+(8, 4, 1, 'C'),
+(8, 4, 2, 'A'),
+(8, 4, 3, 'B'),
+(8, 5, 1, 'C'),
+(8, 5, 2, 'D'),
+(8, 5, 3, 'A'),
+(8, 5, 4, 'B'),
+(8, 5, 5, 'C');
+
+-- Insert answers for User 9
+INSERT INTO Exam_Answers (user_id, exam_section_id, question_number, answer) VALUES
+(9, 3, 1, 'C'),
+(9, 3, 2, 'A'),
+(9, 3, 3, 'B'),
+(9, 4, 1, 'A'),
+(9, 4, 2, 'C'),
+(9, 4, 3, 'D'),
+(9, 5, 1, 'B'),
+(9, 5, 2, 'A'),
+(9, 5, 3, 'C'),
+(9, 5, 4, 'D'),
+(9, 5, 5, 'B');

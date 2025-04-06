@@ -45,7 +45,7 @@ Route::prefix('api')->group(function () {
          //Xem danh sách câu hỏi của bài thi toeic theo từng bài và từng part 
          Route::get('/exam-sections/{exam_code}/{part_number}/questions', [ExamSectionController::class, 'getQuestionsByExamSection']);
 
-         //Xem danh sách câu hỏi của bài thi toeic theo từng bài và từng part 
+         //Xem danh sách câu hỏi của bài thi toeic full 
          Route::get('/exam-sections-full/{exam_code}/questions', [ExamSectionController::class, 'getQuestionsByExamSectionFull']);
          //Tính điểm bài thi toeic 
          Route::post('/submit-exam', [ExamResultController::class, 'submitExam']);
@@ -56,6 +56,12 @@ Route::prefix('api')->group(function () {
         //Sửa  thông tin học sinh 
         Route::put('/students/edit-student/{id}', [StudentController::class, 'editUser']); // Sửa học viên
         Route::put('/students/edit-image/{id}', [StudentController::class, 'editImage']); 
+
+         //Xem lịch sử thi 
+         Route::get('/exam-history/{userId}', [ExamResultController::class, 'getUserExamHistory']);
+         //Xem chi tiết của bài thi lấy từ lịch sử thi 
+         Route::post('/exam-history-detail', [ExamResultController::class, 'getExamDetails']);
+
     });
 
    
