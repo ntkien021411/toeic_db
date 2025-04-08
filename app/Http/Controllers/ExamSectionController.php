@@ -350,11 +350,13 @@ class ExamSectionController extends Controller
             ], 404);
         }
 
-        // Trả về mảng câu hỏi mà không nhóm
+        // Trả về mảng câu hỏi trong object với key là part_number
         return response()->json([
             'message' => 'Lấy câu hỏi thành công.',
             'code' => 200,
-            'data' => $questions
+            'data' => [
+                $part_number => $questions // Bọc câu hỏi trong object với key là part_number
+            ]
         ], 200);
     }
 
@@ -397,11 +399,41 @@ class ExamSectionController extends Controller
             ], 404);
         }
 
-        // Trả về mảng câu hỏi mà không nhóm
+        // Khởi tạo mảng kết quả với 7 part rỗng
+        $result = [
+            1 => [],
+            2 => [],
+            3 => [],
+            4 => [],
+            5 => [],
+            6 => [],
+            7 => []
+        ];
+
+        // Phân loại câu hỏi theo part_number
+        foreach ($questions as $question) {
+            $partNumber = $question->part_number;
+            if (isset($result[$partNumber])) {
+                $result[$partNumber][] = [
+                    'question_number' => $question->question_number,
+                    'question_text' => $question->question_text,
+                    'option_a' => $question->option_a,
+                    'option_b' => $question->option_b,
+                    'option_c' => $question->option_c,
+                    'option_d' => $question->option_d,
+                    'correct_answer' => $question->correct_answer,
+                    'explanation' => $question->explanation,
+                    'audio_url' => $question->audio_url,
+                    'image_url' => $question->image_url
+                ];
+            }
+        }
+
+        // Trả về mảng câu hỏi trong object với key là part_number
         return response()->json([
             'message' => 'Lấy câu hỏi thành công.',
             'code' => 200,
-            'data' => $questions
+            'data' => $result // Trả về mảng kết quả
         ], 200);
     }
 
