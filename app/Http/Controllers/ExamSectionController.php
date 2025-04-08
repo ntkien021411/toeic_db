@@ -306,22 +306,22 @@ class ExamSectionController extends Controller
     public function getQuestionsByExamSection($exam_code, $part_number)
     {
         // Lấy câu hỏi cho phần cụ thể
-        $examSection = ExamSection::where('exam_code', $exam_code)
-            ->where('part_number', $part_number)
-            ->where('is_deleted', false)
+            $examSection = ExamSection::where('exam_code', $exam_code)
+                ->where('part_number', $part_number)
+                ->where('is_deleted', false)
             ->select(['id'])
-            ->first();
+                ->first();
 
-        if (!$examSection) {
-            return response()->json([
-                'message' => 'Không tìm thấy phần thi.',
-                'code' => 404,
-                'data' => null
-            ], 404);
-        }
+            if (!$examSection) {
+                return response()->json([
+                    'message' => 'Không tìm thấy phần thi.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
 
-        // Lấy danh sách câu hỏi theo exam_section_id
-        $questions = Question::where('exam_section_id', $examSection->id)
+            // Lấy danh sách câu hỏi theo exam_section_id
+            $questions = Question::where('exam_section_id', $examSection->id)
             ->where('is_deleted', false) // Chỉ lấy câu hỏi chưa bị xóa
             ->select([
                 'id',
@@ -372,32 +372,32 @@ class ExamSectionController extends Controller
         // Lấy tất cả câu hỏi dựa trên exam_section_id
         $questions = Question::whereIn('exam_section_id', $examSections)
             ->where('is_deleted', false) // Chỉ lấy câu hỏi chưa bị xóa
-            ->select([
-                'id',
-                'exam_section_id',
-                'question_number',
-                'part_number',
-                'question_text',
-                'option_a',
-                'option_b',
-                'option_c',
-                'option_d',
-                'correct_answer',
-                'explanation',
-                'audio_url',
-                'image_url'
-            ])
-            ->orderBy('question_number', 'asc')
-            ->get();
+                ->select([
+                    'id',
+                    'exam_section_id',
+                    'question_number',
+                    'part_number',
+                    'question_text',
+                    'option_a',
+                    'option_b',
+                    'option_c',
+                    'option_d',
+                    'correct_answer',
+                    'explanation',
+                    'audio_url',
+                    'image_url'
+                ])
+                ->orderBy('question_number', 'asc')
+                ->get();
 
         // Kiểm tra xem có câu hỏi nào không
-        if ($questions->isEmpty()) {
-            return response()->json([
-                'message' => 'Không tìm thấy câu hỏi nào cho phần thi này.',
-                'code' => 404,
-                'data' => null
-            ], 404);
-        }
+            if ($questions->isEmpty()) {
+                return response()->json([
+                    'message' => 'Không tìm thấy câu hỏi nào cho phần thi này.',
+                    'code' => 404,
+                    'data' => null
+                ], 404);
+            }
 
         // Khởi tạo mảng kết quả với 7 part rỗng
         $result = [
@@ -433,8 +433,35 @@ class ExamSectionController extends Controller
         // Tính toán question_number cho mỗi part
         $questionNumber = 1; // Bắt đầu từ 1
         foreach ($result as $partNumber => &$partQuestions) {
+            switch ($partNumber) {
+                case 1:
+                    $questionNumber = 1;
+                    break;
+                case 2:
+                    $questionNumber = 7;
+                    break;
+                case 3:
+                    $questionNumber = 32;
+                    break;
+                case 4:
+                    $questionNumber = 71;
+                    break;
+                case 5:
+                    $questionNumber = 101;
+                    break;
+                case 6:
+                    $questionNumber = 131;
+                    break;
+                case 7:
+                    $questionNumber = 147;
+                    break;
+                default:
+                    $questionNumber = 0; // Nếu part không hợp lệ
+                    break;
+            }
+        
             foreach ($partQuestions as &$question) {
-                $question['question_number'] = $questionNumber++; // Gán question_number và tăng giá trị
+                $question['question_number'] = $questionNumber++;
             }
         }
 
@@ -819,7 +846,7 @@ class ExamSectionController extends Controller
                 'is_Free' => $request->is_Free
             ]);
 
-            return response()->json([
+        return response()->json([
                 'message' => 'Cập nhật exam section thành công.',
                 'code' => 200,
                 'data' => [
