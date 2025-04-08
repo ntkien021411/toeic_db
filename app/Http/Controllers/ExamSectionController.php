@@ -57,7 +57,7 @@ class ExamSectionController extends Controller
                     'part_number' => 0,
                     'question_count' => 200,
                     'max_score' => 990,
-                    'duration' => 200,
+                    'duration' => 120,
                     'isFree' => 0,
             ];
         });
