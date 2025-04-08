@@ -147,7 +147,7 @@ class ExamSectionController extends Controller
                 ->get();
 
             if ($examSections->isEmpty()) {
-                return response()->json([
+            return response()->json([
                     'message' => 'Không tìm thấy bài thi',
                     'code' => 404,
                     'data' => null
@@ -171,7 +171,7 @@ class ExamSectionController extends Controller
                 if (isset($result[$partNumber])) {
                     // Lấy câu hỏi của part này
                     $questions = Question::where('exam_section_id', $section->id)
-                        ->where('is_deleted', false)
+                ->where('is_deleted', false)
                         ->orderBy('question_number')
                         ->get();
 
@@ -195,7 +195,7 @@ class ExamSectionController extends Controller
                 }
             }
 
-            return response()->json([
+        return response()->json([
                 'message' => 'Lấy danh sách câu hỏi thành công',
                 'code' => 200,
                 'data' => $result
@@ -305,115 +305,56 @@ class ExamSectionController extends Controller
 
     public function getQuestionsByExamSection($exam_code, $part_number)
     {
-            // Lấy câu hỏi cho phần cụ thể
-            $examSection = ExamSection::where('exam_code', $exam_code)
-                ->where('part_number', $part_number)
-                ->where('is_deleted', false)
-                ->select(['id'])
-                ->first();
+        // Lấy câu hỏi cho phần cụ thể
+        $examSection = ExamSection::where('exam_code', $exam_code)
+            ->where('part_number', $part_number)
+            ->where('is_deleted', false)
+            ->select(['id'])
+            ->first();
 
-            if (!$examSection) {
-                return response()->json([
-                    'message' => 'Không tìm thấy phần thi.',
-                    'code' => 404,
-                    'data' => null
-                ], 404);
-            }
+        if (!$examSection) {
+            return response()->json([
+                'message' => 'Không tìm thấy phần thi.',
+                'code' => 404,
+                'data' => null
+            ], 404);
+        }
 
-            // Lấy danh sách câu hỏi theo exam_section_id
-            $questions = Question::where('exam_section_id', $examSection->id)
-                ->where('is_deleted', false) // Chỉ lấy câu hỏi chưa bị xóa
-                ->select([
-                    'id',
-                    'exam_section_id',
-                    'question_number',
-                    'part_number',
-                    'question_text',
-                    'option_a',
-                    'option_b',
-                    'option_c',
-                    'option_d',
-                    'correct_answer',
-                    'explanation',
-                    'audio_url',
-                    'image_url'
-                ])
-                ->orderBy('question_number', 'asc')
-                ->get();
-        
+        // Lấy danh sách câu hỏi theo exam_section_id
+        $questions = Question::where('exam_section_id', $examSection->id)
+            ->where('is_deleted', false) // Chỉ lấy câu hỏi chưa bị xóa
+            ->select([
+                'id',
+                'exam_section_id',
+                'question_number',
+                'part_number',
+                'question_text',
+                'option_a',
+                'option_b',
+                'option_c',
+                'option_d',
+                'correct_answer',
+                'explanation',
+                'audio_url',
+                'image_url'
+            ])
+            ->orderBy('question_number', 'asc')
+            ->get();
 
         // Kiểm tra xem có câu hỏi nào không
-            if ($questions->isEmpty()) {
-                return response()->json([
-                    'message' => 'Không tìm thấy câu hỏi nào cho phần thi này.',
-                    'code' => 404,
-                    'data' => null
-                ], 404);
-            }
+        if ($questions->isEmpty()) {
+            return response()->json([
+                'message' => 'Không tìm thấy câu hỏi nào cho phần thi này.',
+                'code' => 404,
+                'data' => null
+            ], 404);
+        }
 
-            // Xử lý nhóm câu hỏi theo part_number
-            $groupedQuestions = [];
-            $questionsArray = $questions->toArray();
-
-       
-            // Nhóm câu hỏi cho các part cụ thể
-            switch ($part_number) {
-                case 1:
-                case 5:
-                    // Mỗi câu hỏi là một nhóm riêng
-                    foreach ($questionsArray as $question) {
-                        $groupedQuestions[] = $question;
-                    }
-                    break;
-
-                case 2:
-                case 3:
-                case 4:
-                    // Nhóm 3 câu một
-                    for ($i = 0; $i < count($questionsArray); $i += 3) {
-                        $groupedQuestions[] = array_slice($questionsArray, $i, 3);
-                    }
-                    break;
-
-                case 6:
-                    // Nhóm 4 câu một
-                    for ($i = 0; $i < count($questionsArray); $i += 4) {
-                        $groupedQuestions[] = array_slice($questionsArray, $i, 4);
-                    }
-                    break;
-
-                case 7:
-                    // Xử lý đặc biệt cho part 7 với pattern tăng dần
-                    $currentIndex = 0;
-                    $pattern = [
-                        2, 2, 2,     // 6 câu (3 nhóm 2)
-                        3, 3, 3,     // 9 câu (3 nhóm 3)
-                        4, 4, 4,     // 12 câu (3 nhóm 4)
-                        4, 4, 4,     // 12 câu (3 nhóm 4)
-                        5, 5, 5      // 15 câu (3 nhóm 5)
-                    ];              // Tổng: 54 câu
-                    $patternIndex = 0;
-                    
-                    while ($currentIndex < count($questionsArray)) {
-                        $groupSize = $pattern[$patternIndex % count($pattern)];
-                        $remainingQuestions = count($questionsArray) - $currentIndex;
-                        
-                        if ($groupSize > $remainingQuestions) {
-                            $groupSize = $remainingQuestions;
-                        }
-                        
-                        $groupedQuestions[] = array_slice($questionsArray, $currentIndex, $groupSize);
-                        $currentIndex += $groupSize;
-                        $patternIndex++;
-                    }
-                    break;
-            }
-            
-
+        // Trả về mảng câu hỏi mà không nhóm
         return response()->json([
             'message' => 'Lấy câu hỏi thành công.',
             'code' => 200,
-            'data' => $groupedQuestions
+            'data' => $questions
         ], 200);
     }
 
@@ -446,7 +387,7 @@ class ExamSectionController extends Controller
             ])
             ->orderBy('question_number', 'asc')
             ->get();
-    
+
         // Kiểm tra xem có câu hỏi nào không
         if ($questions->isEmpty()) {
             return response()->json([
@@ -456,91 +397,11 @@ class ExamSectionController extends Controller
             ], 404);
         }
 
-        // Chuyển đổi câu hỏi thành mảng
-        $questionsArray = $questions->toArray();
-
-        // Nhóm câu hỏi theo exam_section_id trước
-        $groupedBySection = [];
-        foreach ($questionsArray as $question) {
-            $groupedBySection[$question['exam_section_id']][] = $question;
-        }
-
-        // Nhóm câu hỏi cho các part cụ thể
-        $groupedQuestionsByPart = []; // Initialize an array to hold grouped questions for each part
-
-        for ($part_number = 1; $part_number <= 7; $part_number++) {
-            $groupedQuestions = []; // Reset for each part
-
-            // Get questions for the current part from the groupedBySection
-            $questionsForPart = [];
-            foreach ($groupedBySection as $sectionId => $questions) {
-                foreach ($questions as $question) {
-                    if ($question['part_number'] == $part_number) {
-                        $questionsForPart[] = $question;
-                    }
-                }
-            }
-
-            switch ($part_number) {
-                case 1:
-                case 5:
-                    // Mỗi câu hỏi là một nhóm riêng
-                    foreach ($questionsForPart as $question) {
-                        $groupedQuestions[] = $question;
-                    }
-                    break;
-
-                case 2:
-                case 3:
-                case 4:
-                    // Nhóm 3 câu một
-                    for ($i = 0; $i < count($questionsForPart); $i += 3) {
-                        $groupedQuestions[] = array_slice($questionsForPart, $i, 3);
-                    }
-                    break;
-
-                case 6:
-                    // Nhóm 4 câu một
-                    for ($i = 0; $i < count($questionsForPart); $i += 4) {
-                        $groupedQuestions[] = array_slice($questionsForPart, $i, 4);
-                    }
-                    break;
-
-                case 7:
-                    // Xử lý đặc biệt cho part 7 với pattern tăng dần
-                    $currentIndex = 0;
-                    $pattern = [
-                        2, 2, 2,     // 6 câu (3 nhóm 2)
-                        3, 3, 3,     // 9 câu (3 nhóm 3)
-                        4, 4, 4,     // 12 câu (3 nhóm 4)
-                        4, 4, 4,     // 12 câu (3 nhóm 4)
-                        5, 5, 5      // 15 câu (3 nhóm 5)
-                    ];              // Tổng: 54 câu
-                    $patternIndex = 0;
-                    
-                    while ($currentIndex < count($questionsForPart)) {
-                        $groupSize = $pattern[$patternIndex % count($pattern)];
-                        $remainingQuestions = count($questionsForPart) - $currentIndex;
-                        
-                        if ($groupSize > $remainingQuestions) {
-                            $groupSize = $remainingQuestions;
-                        }
-                        
-                        $groupedQuestions[] = array_slice($questionsForPart, $currentIndex, $groupSize);
-                        $currentIndex += $groupSize;
-                        $patternIndex++;
-                    }
-                    break;
-            }
-
-            // Store the grouped questions for the current part
-            $groupedQuestionsByPart[$part_number] = $groupedQuestions;
-        }
-
+        // Trả về mảng câu hỏi mà không nhóm
         return response()->json([
             'message' => 'Lấy câu hỏi thành công.',
             'code' => 200,
-            'data' => $groupedQuestionsByPart
+            'data' => $questions
         ], 200);
     }
 
