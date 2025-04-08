@@ -400,62 +400,8 @@ class ExamResultController extends Controller
                     ];
                 }
 
-                // Nhóm câu hỏi theo từng case
-                $groupedQuestions = [];
-                switch ($part) {
-                    case 1:
-                    case 5:
-                        // Mỗi câu hỏi là một nhóm riêng
-                        foreach ($partResult as $question) {
-                            $groupedQuestions[] = $question;
-                        }
-                        break;
-
-                    case 2:
-                    case 3:
-                    case 4:
-                        // Nhóm 3 câu một
-                        for ($i = 0; $i < count($partResult); $i += 3) {
-                            $groupedQuestions[] = array_slice($partResult, $i, 3);
-                        }
-                        break;
-
-                    case 6:
-                        // Nhóm 4 câu một
-                        for ($i = 0; $i < count($partResult); $i += 4) {
-                            $groupedQuestions[] = array_slice($partResult, $i, 4);
-                        }
-                        break;
-
-                    case 7:
-                        // Xử lý đặc biệt cho part 7 với pattern tăng dần
-                        $currentIndex = 0;
-                        $pattern = [
-                            2, 2, 2,     // 6 câu (3 nhóm 2)
-                            3, 3, 3,     // 9 câu (3 nhóm 3)
-                            4, 4, 4,     // 12 câu (3 nhóm 4)
-                            4, 4, 4,     // 12 câu (3 nhóm 4)
-                            5, 5, 5      // 15 câu (3 nhóm 5)
-                        ];              // Tổng: 54 câu
-                        $patternIndex = 0;
-                        
-                        while ($currentIndex < count($partResult)) {
-                            $groupSize = $pattern[$patternIndex % count($pattern)];
-                            $remainingQuestions = count($partResult) - $currentIndex;
-                            
-                            if ($groupSize > $remainingQuestions) {
-                                $groupSize = $remainingQuestions;
-                            }
-                            
-                            $groupedQuestions[] = array_slice($partResult, $currentIndex, $groupSize);
-                            $currentIndex += $groupSize;
-                            $patternIndex++;
-                        }
-                        break;
-                }
-
                 // Thêm kết quả của part vào mảng tổng hợp với key là số nguyên
-                $result[$part] = $groupedQuestions; // Lưu nhóm câu hỏi đã được xử lý
+                $result[$part] = $partResult; // Lưu kết quả cho part
             }
         } else {
             // Lấy một part cụ thể
@@ -504,62 +450,8 @@ class ExamResultController extends Controller
                 ];
             }
 
-            // Nhóm câu hỏi theo từng case cho part cụ thể
-            $groupedQuestions = [];
-            switch ($request->part_number) {
-                case 1:
-                case 5:
-                    // Mỗi câu hỏi là một nhóm riêng
-                    foreach ($partResult as $question) {
-                        $groupedQuestions[] = $question;
-                    }
-                    break;
-
-                case 2:
-                case 3:
-                case 4:
-                    // Nhóm 3 câu một
-                    for ($i = 0; $i < count($partResult); $i += 3) {
-                        $groupedQuestions[] = array_slice($partResult, $i, 3);
-                    }
-                    break;
-
-                case 6:
-                    // Nhóm 4 câu một
-                    for ($i = 0; $i < count($partResult); $i += 4) {
-                        $groupedQuestions[] = array_slice($partResult, $i, 4);
-                    }
-                    break;
-
-                case 7:
-                    // Xử lý đặc biệt cho part 7 với pattern tăng dần
-                    $currentIndex = 0;
-                    $pattern = [
-                        2, 2, 2,     // 6 câu (3 nhóm 2)
-                        3, 3, 3,     // 9 câu (3 nhóm 3)
-                        4, 4, 4,     // 12 câu (3 nhóm 4)
-                        4, 4, 4,     // 12 câu (3 nhóm 4)
-                        5, 5, 5      // 15 câu (3 nhóm 5)
-                    ];              // Tổng: 54 câu
-                    $patternIndex = 0;
-                    
-                    while ($currentIndex < count($partResult)) {
-                        $groupSize = $pattern[$patternIndex % count($pattern)];
-                        $remainingQuestions = count($partResult) - $currentIndex;
-                        
-                        if ($groupSize > $remainingQuestions) {
-                            $groupSize = $remainingQuestions;
-                        }
-                        
-                        $groupedQuestions[] = array_slice($partResult, $currentIndex, $groupSize);
-                        $currentIndex += $groupSize;
-                        $patternIndex++;
-                    }
-                    break;
-            }
-
             // Thêm kết quả của part vào mảng tổng hợp với key là số nguyên
-            $result[$request->part_number] = $groupedQuestions; // Lưu nhóm câu hỏi đã được xử lý
+            $result[$request->part_number] = $partResult; // Lưu kết quả cho part
         }
 
         return response()->json([
