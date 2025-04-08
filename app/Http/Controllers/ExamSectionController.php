@@ -286,7 +286,7 @@ class ExamSectionController extends Controller
                         'max_score' => 990,
                         'is_Free' => $examInfo->is_Free
                     ],
-                    'parts_info' => [$existingParts]
+                    'parts_info' => $existingParts
                     
                 ],
                 'meta' => null
@@ -350,13 +350,17 @@ class ExamSectionController extends Controller
             ], 404);
         }
 
-        // Trả về mảng câu hỏi trong object với key là part_number
+        // Tạo mảng rỗng
+        $result = [];
+
+        // Thêm $part_number => $questions vào mảng
+        $result[$part_number] = $questions;
+
+        // Trả về mảng kết quả
         return response()->json([
             'message' => 'Lấy câu hỏi thành công.',
             'code' => 200,
-            'data' => [
-                $part_number => $questions // Bọc câu hỏi trong object với key là part_number
-            ]
+            'data' => $result // Trả về mảng kết quả
         ], 200);
     }
 
