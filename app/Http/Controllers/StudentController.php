@@ -274,12 +274,12 @@ class StudentController extends Controller
     public function editUser(Request $request,$id )
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:50',
-            'dob' => 'required|date',
-            'gender' => 'required|in:MALE,FEMALE,OTHER',
-            'phone' => 'nullable|string|max:11',
-            'email' => 'nullable|email|max:100',
-            'address' => 'nullable|string|max:255'
+            'name' => 'nullable|string|max:50',
+            'dob' => 'nullable|date',
+            'gender' => 'nullable|in:MALE,FEMALE,OTHER',
+            'phone' => 'required|string|max:11',
+            'email' => 'required|email|max:100',
+            'address' => 'required|string|max:255'
         ], [
             'name.required' => 'Tên không được để trống.',
             'dob.required' => 'Ngày sinh không được để trống.',
