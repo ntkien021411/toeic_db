@@ -286,7 +286,7 @@ class ExamSectionController extends Controller
                         'max_score' => 990,
                         'is_Free' => $examInfo->is_Free
                     ],
-                    'parts_info' => $existingParts
+                    'parts_info' => [$existingParts]
                     
                 ],
                 'meta' => null
