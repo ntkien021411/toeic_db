@@ -424,8 +424,17 @@ class ExamSectionController extends Controller
                     'correct_answer' => $question->correct_answer,
                     'explanation' => $question->explanation,
                     'audio_url' => $question->audio_url,
-                    'image_url' => $question->image_url
+                    'image_url' => $question->image_url,
+                    'part_number' => $partNumber // Thêm part_number vào object
                 ];
+            }
+        }
+
+        // Tính toán question_number cho mỗi part
+        $questionNumber = 1; // Bắt đầu từ 1
+        foreach ($result as $partNumber => &$partQuestions) {
+            foreach ($partQuestions as &$question) {
+                $question['question_number'] = $questionNumber++; // Gán question_number và tăng giá trị
             }
         }
 
