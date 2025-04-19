@@ -309,13 +309,22 @@ class ClassController extends Controller
             $now = now();
             $requestedIds = $request->ids;
 
-            // Lấy danh sách lớp học có tồn tại
+            // Lấy danh sách lớp học có tồn tại và chưa bị xóa
             $existingClasses = Classes::whereIn('id', $requestedIds)->where('is_deleted', false)->get();
             $existingIds = $existingClasses->pluck('id')->toArray();
             $invalidIds = array_diff($requestedIds, $existingIds);
 
-            // Cập nhật trường is_deleted và deleted_at cho các lớp học tồn tại
-            Classes::whereIn('id', $existingIds)->update([
+            // Kiểm tra trạng thái của các lớp học xem đã hoàn thành và có thể xóa hay chưa
+            $notDeletableIds = [];
+            foreach ($existingClasses as $class) {
+                if ($class->status !== 'COMPLETED') {
+                    $notDeletableIds[] = $class->id; // Lưu ID của lớp không thể xóa
+                }
+            }
+
+            // Cập nhật trường is_deleted và deleted_at cho các lớp học tồn tại và có thể xóa
+            $deletableIds = array_diff($existingIds, $notDeletableIds);
+            Classes::whereIn('id', $deletableIds)->update([
                 'is_deleted' => true,
                 'deleted_at' => $now
             ]);
@@ -324,8 +333,9 @@ class ClassController extends Controller
                 'message' => 'Xóa lớp học thành công.',
                 'code' => 200,
                 'data' => [
-                    'deleted_classes' => $existingIds,
-                    'invalid_ids' => $invalidIds
+                    'deleted_classes' => $deletableIds,
+                    'not_exist_ids' => $invalidIds,
+                    'not_completed_class_ids' => $notDeletableIds // Trả về các ID không thể xóa
                 ],
                 'meta' => null
             ], 200);

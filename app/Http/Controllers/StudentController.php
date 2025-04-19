@@ -219,10 +219,10 @@ class StudentController extends Controller
             $existingIds = $existingUsers->pluck('id')->toArray();
             $invalidIds = array_diff($requestedIds, $existingIds);
     
-            // Lọc ra danh sách giáo viên có role TEACHER
-            $teachers = $existingUsers->where('role', 'STUDENT');
+            // Lọc ra danh sách học viên có role STUDENT
+            $students = $existingUsers->where('role', 'STUDENT');
     
-            if ($teachers->isEmpty()) {
+            if ($students->isEmpty()) {
                 return response()->json([
                     'message' => 'Không tìm thấy học viên hợp lệ để xóa.',
                     'code' => 400,
@@ -233,17 +233,24 @@ class StudentController extends Controller
                 ], 400);
             }
     
-            // Lấy danh sách account_id từ bảng users để update bảng account
-            $accountIds = $teachers->pluck('account_id')->unique()->toArray();
-            $userIds = $teachers->pluck('id')->toArray();
+            // Kiểm tra xem học sinh có đang tham gia lớp nào không
+            $studentIds = $students->pluck('id')->toArray();
+            $studentsInClasses = ClassUser::whereIn('user_id', $studentIds)->pluck('user_id')->toArray();
     
-            // Cập nhật bảng users
-            User::whereIn('id', $userIds)->update([
+            // Lọc ra các ID không thể xóa
+            $notDeletableIds = array_intersect($studentIds, $studentsInClasses);
+    
+            // Tạo danh sách các ID có thể xóa
+            $deletableIds = array_diff($studentIds, $notDeletableIds);
+    
+            // Cập nhật bảng users cho các học viên có thể xóa
+            User::whereIn('id', $deletableIds)->update([
                 'is_deleted' => true,
                 'deleted_at' => $now
             ]);
     
-            // Cập nhật bảng account
+            // Cập nhật bảng account cho các học viên có thể xóa
+            $accountIds = $students->pluck('account_id')->unique()->toArray();
             Account::whereIn('id', $accountIds)->update([
                 'is_deleted' => true,
                 'deleted_at' => $now
@@ -253,9 +260,9 @@ class StudentController extends Controller
                 'message' => 'Xóa học viên thành công.',
                 'code' => 200,
                 'data' => [
-                    'deleted_users' => $userIds,
-                    'updated_accounts' => $accountIds,
-                    'invalid_ids' => $invalidIds
+                    'deleted_users' => $deletableIds,
+                    'not_deletable_ids' => $notDeletableIds, // Trả về các ID không thể xóa
+                    'invalid_ids' => $invalidIds // Trả về các ID không tồn tại
                 ],
                 'meta' => null
             ], 200);

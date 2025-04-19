@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Account;
+use App\Models\Classes;
 use App\Models\Diploma;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -250,17 +251,24 @@ class TeacherController extends Controller
                 ], 400);
             }
     
-            // Lấy danh sách account_id từ bảng users để update bảng account
-            $accountIds = $teachers->pluck('account_id')->unique()->toArray();
-            $userIds = $teachers->pluck('id')->toArray();
+            // Kiểm tra xem giáo viên có đang dạy lớp nào không
+            $teacherIds = $teachers->pluck('id')->toArray();
+            $classesWithTeachers = Classes::whereIn('teacher_id', $teacherIds)->pluck('teacher_id')->toArray();
     
-            // Cập nhật bảng users
-            User::whereIn('id', $userIds)->update([
+            // Lọc ra các ID không thể xóa
+            $notDeletableIds = array_intersect($teacherIds, $classesWithTeachers);
+    
+            // Tạo danh sách các ID có thể xóa
+            $deletableIds = array_diff($teacherIds, $notDeletableIds);
+    
+            // Cập nhật bảng users cho các giáo viên có thể xóa
+            User::whereIn('id', $deletableIds)->update([
                 'is_deleted' => true,
                 'deleted_at' => $now
             ]);
     
-            // Cập nhật bảng account
+            // Cập nhật bảng account cho các giáo viên có thể xóa
+            $accountIds = $teachers->pluck('account_id')->unique()->toArray();
             Account::whereIn('id', $accountIds)->update([
                 'is_deleted' => true,
                 'deleted_at' => $now
@@ -270,8 +278,8 @@ class TeacherController extends Controller
                 'message' => 'Xóa giáo viên thành công.',
                 'code' => 200,
                 'data' => [
-                    'deleted_users' => $userIds,
-                    'updated_accounts' => $accountIds,
+                    'deleted_users' => $deletableIds,
+                    'not_deletable_ids' => $notDeletableIds, // Trả về các ID không thể xóa
                     'invalid_ids' => $invalidIds
                 ],
                 'meta' => null
