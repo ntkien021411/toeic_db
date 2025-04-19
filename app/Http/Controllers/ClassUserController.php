@@ -26,7 +26,6 @@ class ClassUserController extends Controller
             'class_id.integer' => 'Class ID phải là số.',
         ]);
 
-
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Dữ liệu đầu vào không hợp lệ.',
@@ -63,6 +62,43 @@ class ClassUserController extends Controller
             ], 409);
         }
 
+        // **Bắt đầu kiểm tra lịch học trùng**
+        // Lấy thông tin ngày học và thời gian của lớp mới
+        $newClassDays = json_decode($class->days, true); // Chuyển đổi chuỗi JSON thành mảng
+        $newStartDate = $class->start_date;
+        $newEndDate = $class->end_date;
+        $newStartTime = $class->start_time; // Thời gian bắt đầu của lớp mới
+        $newEndTime = $class->end_time; // Thời gian kết thúc của lớp mới
+
+        // Lấy tất cả các lớp mà học sinh đã tham gia
+        $studentClasses = ClassUser::where('user_id', $request->user_id)
+            ->with('class') // Eager load để lấy thông tin lớp
+            ->get();
+
+        // Kiểm tra từng lớp mà học sinh đã tham gia
+        foreach ($studentClasses as $studentClass) {
+            $studentClassDays = json_decode($studentClass->class->days, true); // Chuyển đổi chuỗi JSON thành mảng
+            $studentStartDate = $studentClass->class->start_date;
+            $studentEndDate = $studentClass->class->end_date;
+            $studentStartTime = $studentClass->class->start_time; // Thời gian bắt đầu của lớp đã có
+            $studentEndTime = $studentClass->class->end_time; // Thời gian kết thúc của lớp đã có
+
+            // **Kiểm tra xem có trùng lịch không**
+            if (
+                (strtotime($newStartDate) <= strtotime($studentEndDate) && strtotime($newEndDate) >= strtotime($studentStartDate)) && // Kiểm tra khoảng thời gian
+                array_intersect($newClassDays, $studentClassDays) && // Kiểm tra ngày học có trùng không
+                (strtotime($newStartTime) < strtotime($studentEndTime) && strtotime($newEndTime) > strtotime($studentStartTime)) // Kiểm tra thời gian có trùng không
+            ) {
+                return response()->json([
+                    'message' => 'Lịch học bị trùng với lớp đã có.',
+                    'code' => 409,
+                    'data' => null,
+                    'meta' => null
+                ], 409);
+            }
+        }
+        // **Kết thúc kiểm tra lịch học trùng**
+
         // Thêm user vào class
         $classUser = ClassUser::create([
             'class_id' => $request->class_id,
@@ -78,7 +114,6 @@ class ClassUserController extends Controller
             'data' => $classUser,
             'meta' => null
         ], 201);
-
     }
 
     public function getStudentClasses(Request $request,$user_id)
